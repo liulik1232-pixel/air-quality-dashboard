@@ -1,0 +1,2074 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天穹智析 · 中国城市空气污染物分析大屏</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus/dist/index.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/element-plus"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root{--bg:#02060e;--glass:rgba(3,12,24,0.82);--cyan:#00e5d0;--blue:#4dabf7;--green:#20c997;--yellow:#ffc107;--orange:#fd7e14;--red:#f03e3e;--purple:#9775fa;--text:#e9ecef;--muted:#868e96;--border:rgba(0,229,208,0.12);}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;width:100vw;height:100vh;position:relative;}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,rgba(0,229,208,0.04) 0%,transparent 60%),radial-gradient(ellipse at 30% 70%,rgba(77,171,247,0.03) 0%,transparent 50%);}
+#app{width:100vw;height:100vh;display:grid;grid-template-rows:62px 1fr auto;grid-template-columns:1fr;padding:8px 10px;gap:6px;}
+/* TOP BAR */
+.top-bar{display:flex;align-items:center;justify-content:center;gap:20px;padding:0 16px;background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:12px;position:relative;overflow:hidden;}
+.top-bar::after{content:'';position:absolute;bottom:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);}
+.main-title{font-size:38px;font-weight:900;letter-spacing:12px;background:linear-gradient(135deg,#e0f8ff 0%,var(--cyan) 20%,var(--blue) 50%,var(--cyan) 80%,#e0f8ff 100%);background-size:200% 200%;-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;animation:titleShine 4s ease-in-out infinite,glow 2.5s ease-in-out infinite;position:relative;}
+@keyframes titleShine{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
+@keyframes glow{0%,100%{filter:drop-shadow(0 0 14px rgba(0,229,208,0.45)) drop-shadow(0 0 3px rgba(77,171,247,0.4));}50%{filter:drop-shadow(0 0 30px rgba(0,229,208,0.85)) drop-shadow(0 0 12px rgba(77,171,247,0.7)) drop-shadow(0 0 50px rgba(0,229,208,0.3));}}
+.top-selectors{position:absolute;left:14px;display:flex;gap:6px;z-index:5;}
+.top-selectors .el-select{width:95px;}
+/* Unify el-select with card selector style */
+.top-selectors .el-input__wrapper{background:rgba(0,0,0,0.55)!important;border:1px solid rgba(0,229,208,0.2)!important;border-radius:5px!important;box-shadow:none!important;padding:0 8px!important;height:26px!important;}
+.top-selectors .el-input__wrapper:hover{border-color:rgba(0,229,208,0.4)!important;box-shadow:0 0 8px rgba(0,229,208,0.1)!important;}
+.top-selectors .el-input__inner{color:var(--cyan)!important;font-size:11px!important;height:24px!important;line-height:24px!important;}
+.top-selectors .el-input__inner::placeholder{color:rgba(134,142,150,0.6)!important;}
+.top-selectors .el-select__caret{color:rgba(0,229,208,0.5)!important;}
+/* El-select dropdown */
+.el-select-dropdown{background:rgba(6,16,32,0.96)!important;border:1px solid rgba(0,229,208,0.2)!important;border-radius:8px!important;backdrop-filter:blur(12px)!important;}
+.el-select-dropdown__item{color:#c0c8d0!important;font-size:12px!important;}
+.el-select-dropdown__item.hover,.el-select-dropdown__item:hover{background:rgba(0,229,208,0.08)!important;color:var(--cyan)!important;}
+.el-select-dropdown__item.selected{color:var(--cyan)!important;font-weight:700!important;}
+.el-popper__arrow::before{background:rgba(6,16,32,0.96)!important;border-color:rgba(0,229,208,0.2)!important;}
+.top-info{font-size:12px;color:var(--muted);letter-spacing:1px;position:absolute;right:18px;}
+/* MAIN GRID */
+.main-grid{display:grid;grid-template-columns:270px 1fr 330px;gap:6px;height:100%;overflow:hidden;}
+/* GLASS */
+.glass{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 0 24px rgba(0,229,208,0.04),inset 0 1px 0 rgba(255,255,255,0.02);}
+.glass.scroll{overflow-y:auto;overflow-x:hidden;}
+.glass.scroll::-webkit-scrollbar{width:3px;}
+.glass.scroll::-webkit-scrollbar-track{background:transparent;}
+.glass.scroll::-webkit-scrollbar-thumb{background:rgba(0,229,208,0.18);border-radius:3px;}
+.glass.scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,229,208,0.35);}
+/* LEFT */
+.left-panel{display:flex;flex-direction:column;gap:6px;padding:12px;}
+.sec-label{font-size:12px;font-weight:700;color:var(--cyan);letter-spacing:2px;padding:4px 0;border-bottom:1px solid rgba(0,229,208,0.2);text-transform:uppercase;}
+.kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.kpi-card{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:10px;text-align:center;transition:all 0.3s;}
+.kpi-card:hover{border-color:var(--cyan);box-shadow:0 0 20px rgba(0,229,208,0.1);transform:translateY(-1px);}
+.kpi-card .lbl{font-size:11px;color:var(--muted);margin-bottom:3px;}
+.kpi-card .val{font-size:26px;font-weight:800;font-family:'DIN Alternate','Consolas',monospace;background:linear-gradient(180deg,#fff,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.kpi-card .val.sm{font-size:15px;}
+.kpi-card .sub{font-size:10px;margin-top:1px;}
+.kpi-card .sub.g{color:var(--blue);}.kpi-card .sub.b{color:var(--purple);}.kpi-card .sub.i{color:var(--cyan);}
+.rank-list{overflow:visible;flex:none;}
+/* KPI MODAL */
+.kpi-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(2,8,16,0.88);z-index:100;display:flex;align-items:center;justify-content:center;}
+.kpi-modal{background:rgba(6,16,32,0.95);backdrop-filter:blur(20px);border:1px solid rgba(0,229,208,0.3);border-radius:16px;padding:24px 28px;max-width:600px;width:90%;position:relative;}
+.rank-item{display:flex;align-items:center;padding:5px 8px;border-radius:8px;margin-bottom:2px;cursor:pointer;transition:all 0.2s;font-size:12px;gap:6px;}
+.rank-item:hover{background:rgba(0,229,208,0.1);transform:translateX(2px);}
+.rbadge{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;flex-shrink:0;}
+.rbadge.g{background:rgba(77,171,247,0.25);color:var(--blue);}
+.rbadge.b{background:rgba(229,153,247,0.25);color:var(--purple);}
+.rname{flex:1;font-weight:600;}
+.rval{font-family:monospace;color:var(--muted);font-size:11px;}
+.insight-item{font-size:11px;color:var(--muted);line-height:1.7;padding:2px 0;display:flex;justify-content:space-between;}
+.insight-item .iv{color:var(--text);font-weight:600;}
+/* CENTER */
+.center-panel{position:relative;overflow:hidden;padding:0!important;}
+#globe-container{position:absolute;top:0;left:0;width:100%;height:100%;border-radius:12px;overflow:hidden;}
+.fs-btn{position:absolute;top:8px;right:8px;z-index:30;background:rgba(0,0,0,0.6);color:var(--cyan);border:1px solid rgba(0,229,208,0.3);border-radius:6px;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+.fs-btn:hover{background:rgba(0,229,208,0.15);border-color:var(--cyan);}
+.main-grid.fs-mode .left-panel,.main-grid.fs-mode .right-panel{display:flex;}
+.main-grid.fs-mode{grid-template-columns:270px 1fr 330px;}
+.main-grid.fs-mode + div{height:180px;}
+.center-panel.fs-mode{border-radius:0;}
+#globe-tip{position:absolute;z-index:20;pointer-events:none;background:rgba(0,0,0,0.92);border:1px solid var(--cyan);border-radius:10px;padding:8px 14px;font-size:13px;display:none;white-space:nowrap;font-weight:600;backdrop-filter:blur(4px);box-shadow:0 4px 20px rgba(0,229,208,0.15);}
+#globe-tip .tip-city{color:#e0f8ff;}
+#globe-tip .tip-prov{margin-left:6px;color:var(--muted);font-weight:400;}
+
+.globe-legend{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:10;display:flex;gap:8px;align-items:center;background:rgba(0,0,0,0.7);padding:5px 16px;border-radius:16px;font-size:10px;border:1px solid rgba(255,255,255,0.06);}
+.ldot{width:10px;height:10px;border-radius:2px;display:inline-block;}
+/* RIGHT */
+.right-panel{display:flex;flex-direction:column;gap:6px;padding:10px;}
+.chart-card{min-height:140px;background:rgba(0,0,0,0.2);border-radius:10px;padding:6px;flex-shrink:0;border:1px solid rgba(255,255,255,0.04);position:relative;cursor:pointer;transition:all 0.35s;}
+.chart-card:hover{border-color:rgba(0,229,208,0.35);box-shadow:0 0 20px rgba(0,229,208,0.1),inset 0 0 30px rgba(0,229,208,0.02);}
+.chart-card .ch-title{font-size:11px;color:var(--muted);text-align:center;letter-spacing:1px;transition:color 0.3s;}
+.chart-card:hover .ch-title{color:#c0f0e8;}
+.chart-card .ch-top{display:flex;align-items:center;justify-content:center;gap:4px;position:relative;}
+.chart-card .ch-year-sel{position:absolute;right:50px;top:2px;font-size:9px;background:rgba(0,0,0,0.6);color:var(--cyan);border:1px solid rgba(0,229,208,0.2);border-radius:3px;padding:1px 3px;cursor:pointer;opacity:0;transition:opacity 0.2s;z-index:6;font-family:inherit;outline:none;}
+.chart-card:hover .ch-year-sel{opacity:1;}
+.chart-card .ch-year-sel option{background:#0a1428;color:var(--text);}
+.chart-card .ch-city-sel{position:absolute;right:100px;top:2px;font-size:9px;background:rgba(0,0,0,0.6);color:var(--blue);border:1px solid rgba(77,171,247,0.2);border-radius:3px;padding:1px 3px;cursor:pointer;opacity:0;transition:opacity 0.2s;z-index:6;font-family:inherit;outline:none;max-width:80px;}
+.chart-card:hover .ch-city-sel{opacity:1;}
+.chart-card .ch-city-sel option{background:#0a1428;color:var(--text);}
+.chart-card .zoom-btn{position:absolute;top:4px;right:8px;font-size:14px;color:var(--muted);opacity:0;transition:opacity 0.2s;z-index:5;background:none;border:none;cursor:pointer;}
+.chart-card:hover .zoom-btn{opacity:1;}
+/* ZOOM OVERLAY */
+.zoom-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(2,8,16,0.92);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+.zoom-overlay .zoom-close{position:absolute;top:20px;right:30px;font-size:32px;color:var(--text);cursor:pointer;z-index:101;}
+.zoom-overlay .zoom-title{font-size:18px;color:var(--cyan);margin-bottom:10px;letter-spacing:2px;}
+.zoom-overlay .zoom-chart{width:92vw;height:80vh;z-index:101;position:relative;}
+.mini-overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(2,8,16,0.7);z-index:150;display:flex;align-items:center;justify-content:center;}
+.mini-card{background:rgba(6,16,32,0.96);backdrop-filter:blur(16px);border:1px solid rgba(0,229,208,0.3);border-radius:14px;padding:16px 20px;width:520px;max-width:90vw;position:relative;}
+.mini-close{position:absolute;top:10px;right:16px;color:var(--muted);font-size:22px;cursor:pointer;z-index:10;}
+.mini-close:hover{color:var(--cyan);}
+.mini-title{font-size:14px;color:var(--cyan);margin-bottom:6px;letter-spacing:1px;}
+.mini-chart{height:300px;width:100%;}
+/* POLICY PANEL */
+.policy-box{background:rgba(0,0,0,0.25);border-radius:10px;padding:10px;border:1px solid rgba(255,255,255,0.04);}
+.policy-box .p-title{font-size:12px;color:var(--yellow);font-weight:700;margin-bottom:4px;letter-spacing:1px;}
+.policy-box .p-text{font-size:10px;color:var(--muted);line-height:1.6;}
+/* LOADING */
+.loading-msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:999;text-align:center;pointer-events:none;}
+.loading-ring{width:48px;height:48px;border:3px solid rgba(0,229,208,0.12);border-top-color:var(--cyan);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.el-select{--el-fill-color-blank:rgba(0,0,0,0.5);--el-text-color-regular:#e9ecef;--el-border-color:rgba(0,229,208,0.25);}
+.ch-year-sel optgroup{font-weight:700;color:var(--cyan);background:#0a1428;}
+
+/* FULLSCREEN */
+html:fullscreen, body:fullscreen, #app:fullscreen {background: var(--bg);}
+#app:fullscreen {padding: 8px 10px; gap: 6px;}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="loading-msg" v-if="loading"><div class="loading-ring"></div><div style="color:var(--cyan);font-size:14px;">正在加载全国空气质量数据...</div></div>
+
+<!-- TOP -->
+<div class="top-bar">
+  <div class="top-selectors">
+    <el-select v-model="selectedYear" size="default"><el-option v-for="y in years" :key="y" :label="y+'年'" :value="y"></el-option></el-select>
+    <el-select v-model="selectedCity" size="default" filterable placeholder="全国" clearable><el-option label="🌏 全国总览" value=""></el-option><el-option v-for="c in cities" :key="c" :label="c" :value="c"></el-option></el-select>
+  </div>
+  <div class="main-title">天 穹 智 析</div>
+  <div class="top-info">天穹智析 · 中国城市空气污染物分析大屏 ｜ {{ selectedYear }}年 {{ selectedCity||'全国总览' }}</div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="main-grid" :class="{'fs-mode':isFullscreen}">
+  <!-- LEFT -->
+  <div class="glass scroll left-panel">
+    <!-- 污染物相关性 -->
+    <div class="sec-label" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" @dblclick="zoomChart('ch7','污染物相关性热力图')">
+      <span>🔗 污染物相关性热力图</span>
+      <div style="display:flex;gap:4px;align-items:center;">
+        <select @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity" style="background:rgba(0,0,0,0.4);color:var(--blue);border:1px solid rgba(77,171,247,0.2);border-radius:3px;font-size:9px;padding:1px 3px;cursor:pointer;font-family:inherit;outline:none;max-width:80px;margin-right:4px;"><option value="">全国</option><option v-for="c in cities" :value="c">{{c}}</option></select>
+        <select @click.stop @change="e=>onChartYear('ch7',+e.target.value)" :value="chYear('ch7')" style="background:rgba(0,0,0,0.4);color:var(--cyan);border:1px solid rgba(0,229,208,0.2);border-radius:3px;font-size:9px;padding:1px 3px;cursor:pointer;outline:none;">
+          <option v-for="y in years" :value="y">{{y}}年</option>
+        </select>
+      </div>
+    </div>
+    <div id="ch7" style="height:200px;cursor:pointer;" @dblclick="zoomChart('ch7','污染物相关性热力图')"></div>
+
+    <div style="border-top:1px solid rgba(0,229,208,0.15);margin:8px 0 4px 0;"></div>
+    <!-- 桑基图 -->
+    <div class="sec-label" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" @dblclick="zoomChart('ch16','质量等级转移（桑基图）')">
+      <span>🔀 质量等级转移（桑基图）</span>
+      <div style="display:flex;gap:4px;align-items:center;">
+        
+        <select @click.stop @change="e=>onChartYear('ch16',+e.target.value)" :value="chYear('ch16')" style="background:rgba(0,0,0,0.4);color:var(--cyan);border:1px solid rgba(0,229,208,0.2);border-radius:3px;font-size:9px;padding:1px 3px;cursor:pointer;outline:none;">
+          <option v-for="y in years" :value="y">{{y}}年</option>
+        </select>
+      </div>
+    </div>
+    <div id="ch16" style="height:200px;cursor:pointer;" @dblclick="zoomChart('ch16','质量等级转移（桑基图）')"></div>
+
+    <!-- 底部操作按钮 -->
+    <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;padding:6px 0;border-top:1px solid rgba(0,229,208,0.1);margin-top:4px;">
+      <button @click="toggleMiniRank('best')" style="background:rgba(0,229,208,0.08);border:1px solid rgba(0,229,208,0.25);color:var(--cyan);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:10px;letter-spacing:1px;transition:all 0.2s;">🏆 空气最佳 Top</button>
+      <button @click="toggleMiniRank('worst')" style="background:rgba(240,62,62,0.08);border:1px solid rgba(240,62,62,0.25);color:var(--red);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:10px;letter-spacing:1px;transition:all 0.2s;">🔻 污染警示 Top</button>
+      <button @click="kpiVisible=true" style="background:rgba(0,229,208,0.08);border:1px solid rgba(0,229,208,0.25);color:var(--cyan);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:10px;letter-spacing:1px;transition:all 0.2s;">📊 核心指标</button>
+      <button @click="policyVisible=true" style="background:rgba(255,193,7,0.08);border:1px solid rgba(255,193,7,0.25);color:var(--yellow);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:10px;letter-spacing:1px;transition:all 0.2s;">💡 政策建议</button>
+    </div>
+  </div>
+
+    <!-- CENTER GLOBE -->
+  <div class="glass center-panel" :class="{'fs-mode':isFullscreen}" style="padding:0;" @dblclick="toggleFullscreen">
+    <button class="fs-btn" @click="togglePageFullscreen" title="全屏模式">⛶</button>
+    <div id="globe-container"></div>
+    <div id="globe-tip"></div>
+    <div class="globe-legend"><span style="color:#0cc;">◈</span><span class="ldot" style="background:#4dabf7;"></span>优<span class="ldot" style="background:#748ffc;"></span>良<span class="ldot" style="background:#9775fa;"></span>轻度<span class="ldot" style="background:#b197fc;"></span>中度<span class="ldot" style="background:#e599f7;"></span>重度+<span style="color:#889;margin-left:8px;">| 点击城市/省份放大 · 双击还原</span></div>
+  </div>
+
+  <!-- RIGHT CHARTS -->
+  <div class="glass scroll right-panel" id="right-scroll">
+    <div class="chart-card" @dblclick.stop="zoomChart('ch1','月度 AQI 变化趋势')">
+      <select class="ch-year-sel" @change="e=>onChartYear('ch1',+e.target.value)" @click.stop :value="chYear('ch1')"><option v-for="y in years" :value="y">{{y}}年</option></select>
+      <select class="ch-city-sel" @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity"><option value="">全国</option><option v-for="c in cities" :value="c">{{c}}</option></select>
+      <button class="zoom-btn" @click.stop="zoomChart('ch1','月度 AQI 变化趋势')">⛶</button>
+      <div class="ch-title">📈 月度 AQI 变化趋势 <span v-if="chYear('ch1')!==selectedYear" style="color:var(--yellow);font-size:10px;">[{{chYear('ch1')}}年]</span></div>
+      <div id="ch1" style="height:135px;"></div>
+    </div>
+    <div class="chart-card" @dblclick.stop="zoomChart('ch2','污染物浓度雷达图')">
+      <select class="ch-year-sel" @change="e=>onChartYear('ch2',+e.target.value)" @click.stop :value="chYear('ch2')"><option v-for="y in years" :value="y">{{y}}年</option></select>
+      <select class="ch-city-sel" @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity"><option value="">全国</option><option v-for="c in cities" :value="c">{{c}}</option></select>
+      <button class="zoom-btn" @click.stop="zoomChart('ch2','污染物浓度雷达图')">⛶</button>
+      <div class="ch-title">🎯 污染物浓度雷达图 <span v-if="chYear('ch2')!==selectedYear" style="color:var(--yellow);font-size:10px;">[{{chYear('ch2')}}年]</span></div>
+      <div id="ch2" style="height:145px;"></div>
+    </div>
+    <div class="chart-card" @dblclick.stop="zoomChart('ch4','六项污染物年均对比')">
+      <select class="ch-year-sel" @change="e=>onChartYear('ch4',+e.target.value)" @click.stop :value="chYear('ch4')"><option v-for="y in years" :value="y">{{y}}年</option></select>
+      <select class="ch-city-sel" @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity"><option value="">全国</option><option v-for="c in cities" :value="c">{{c}}</option></select>
+      <button class="zoom-btn" @click.stop="zoomChart('ch4','六项污染物年均对比')">⛶</button>
+      <div class="ch-title">📊 六项污染物年均对比 <span v-if="chYear('ch4')!==selectedYear" style="color:var(--yellow);font-size:10px;">[{{chYear('ch4')}}年]</span></div>
+      <div id="ch4" style="height:135px;"></div>
+    </div>
+    <div class="chart-card" @dblclick.stop="zoomChart('ch5','多年 AQI 变化趋势 2013-2023')">
+      <button class="zoom-btn" @click.stop="zoomChart('ch5','多年 AQI 变化趋势 2013-2023')">⛶</button>
+      <div class="ch-title">📅 多年 AQI 变化趋势 (2013-2023)</div>
+      <div id="ch5" style="height:135px;"></div>
+    </div>
+    <div class="chart-card" @dblclick.stop="zoomChart('ch6','四季 AQI 对比')">
+      <select class="ch-year-sel" @change="e=>onChartYear('ch6',+e.target.value)" @click.stop :value="chYear('ch6')"><option v-for="y in years" :value="y">{{y}}年</option></select>
+      <select class="ch-city-sel" @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity"><option value="">全国</option><option v-for="c in cities" :value="c">{{c}}</option></select>
+      <button class="zoom-btn" @click.stop="zoomChart('ch6','四季 AQI 对比')">⛶</button>
+      <div class="ch-title">🌡️ 四季 AQI 对比 <span v-if="chYear('ch6')!==selectedYear" style="color:var(--yellow);font-size:10px;">[{{chYear('ch6')}}年]</span></div>
+      <div id="ch6" style="height:130px;"></div>
+    </div>
+    <div class="chart-card" @dblclick.stop="zoomChart('ch10','城市空气改善排行')">
+      <select class="ch-year-sel" @change="e=>onChartYear('ch10',+e.target.value)" @click.stop :value="chYear('ch10')"><option v-for="y in years" :value="y">{{y}}年</option></select>
+      <select class="ch-city-sel" @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity"><option value="">全国</option><option v-for="c in cities" :value="c">{{c}}</option></select>
+      <button class="zoom-btn" @click.stop="zoomChart('ch10','城市空气改善排行')">⛶</button>
+      <div class="ch-title">🏅 城市空气改善排行 <span v-if="chYear('ch10')!==selectedYear" style="color:var(--yellow);font-size:10px;">[{{chYear('ch10')}}年]</span></div>
+      <div id="ch10" style="height:145px;"></div>
+    </div>
+    <div class="chart-card" @dblclick.stop="zoomChart('ch8','城市 AQI 排名 Top15')">
+      <select class="ch-year-sel" @change="e=>onChartYear('ch8',+e.target.value)" @click.stop :value="chYear('ch8')"><option v-for="y in years" :value="y">{{y}}年</option></select>
+      <button class="zoom-btn" @click.stop="zoomChart('ch8','城市 AQI 排名 Top15')">⛶</button>
+      <div class="ch-title">🏙️ 城市 AQI 排名 Top15 <span v-if="chYear('ch8')!==selectedYear" style="color:var(--yellow);font-size:10px;">[{{chYear('ch8')}}年]</span></div>
+      <div id="ch8" style="height:145px;"></div>
+    </div>
+    <div class="chart-card" @dblclick.stop="zoomChart('ch9','质量等级转移矩阵')">
+      <select class="ch-year-sel" @change="e=>onChartYear('ch9',+e.target.value)" @click.stop :value="chYear('ch9')"><option v-for="y in years" :value="y">{{y}}年</option></select>
+      <select class="ch-city-sel" @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity"><option value="">全国</option><option v-for="c in cities" :value="c">{{c}}</option></select>
+      <button class="zoom-btn" @click.stop="zoomChart('ch9','质量等级转移矩阵')">⛶</button>
+      <div class="ch-title">🔄 质量等级转移矩阵 <span v-if="chYear('ch9')!==selectedYear" style="color:var(--yellow);font-size:10px;">[{{chYear('ch9')}}年]</span></div>
+      <div id="ch9" style="height:145px;"></div>
+    </div>
+    <div class="chart-card" @dblclick.stop="zoomChart('ch11','主要污染物变化')">
+      <select class="ch-year-sel" @change="e=>onChartYear('ch11',+e.target.value)" @click.stop :value="chYear('ch11')"><option v-for="y in years" :value="y">{{y}}年</option></select>
+      <select class="ch-city-sel" @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity"><option value="">全国</option><option v-for="c in cities" :value="c">{{c}}</option></select>
+      <button class="zoom-btn" @click.stop="zoomChart('ch11','主要污染物变化')">⛶</button>
+      <div class="ch-title">🧪 主要污染物变化 <span v-if="chYear('ch11')!==selectedYear" style="color:var(--yellow);font-size:10px;">[{{chYear('ch11')}}年]</span></div>
+      <div id="ch11" style="height:145px;"></div>
+    </div>
+    <div class="chart-card" @dblclick.stop="zoomChart('ch12','十年AQI变化趋势 · 2013-2023')">
+      <button class="zoom-btn" @click.stop="zoomChart('ch12','十年AQI变化趋势 · 2013-2023')">⛶</button>
+      <div class="ch-title">🔬 十年AQI变化趋势 (2013-2023)</div>
+      <div id="ch12" style="height:145px;"></div>
+    </div>
+    <div class="chart-card" @dblclick.stop="zoomChart('ch15','AQI 月度区间折线图')">
+      <select class="ch-year-sel" @change="e=>onChartYear('ch15',+e.target.value)" @click.stop :value="chYear('ch15')"><option v-for="y in years" :value="y">{{y}}年</option></select>
+      <select class="ch-city-sel" @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity"><option value="">全国</option><option v-for="c in cities" :value="c">{{c}}</option></select>
+      <button class="zoom-btn" @click.stop="zoomChart('ch15','AQI 月度区间折线图')">⛶</button>
+      <div class="ch-title">📈 区间折线图 · AQI极值范围 <span v-if="chYear('ch15')!==selectedYear" style="color:var(--yellow);font-size:10px;">[{{chYear('ch15')}}年]</span></div>
+      <div id="ch15" style="height:165px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM CHARTS ROW -->
+<div style="display:flex;gap:6px;padding:0 10px;height:210px;flex-shrink:0;" v-show="!zoomVisible">
+  <!-- Left half: ch13 + ch17 nested -->
+  <div style="flex:1;display:flex;gap:6px;">
+    <div class="chart-card glass" style="flex:1;cursor:pointer;" @dblclick.stop="zoomChart('ch13','空气质量等级分布（南丁格尔玫瑰图）')">
+      <select class="ch-year-sel" @change="e=>onChartYear('ch13',+e.target.value)" @click.stop :value="chYear('ch13')"><option v-for="y in years" :value="y">{{y}}年</option></select>
+      <select class="ch-city-sel" @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity"><option value="">全国</option><option v-for="c in cities" :value="c">{{c}}</option></select>
+      <button class="zoom-btn" @click.stop="zoomChart('ch13','空气质量等级分布（南丁格尔玫瑰图）')">⛶</button>
+      <div class="ch-title">🌹 空气质量等级分布（南丁格尔玫瑰图） <span v-if="chYear('ch13')!==selectedYear" style="color:var(--yellow);font-size:10px;">[{{chYear('ch13')}}年]</span></div>
+      <div id="ch13" style="height:170px;"></div>
+    </div>
+    <div class="chart-card glass" style="flex:1;cursor:pointer;" @dblclick.stop="zoomChart('ch17','旭日图 · 城市等级层级')">
+      <select class="ch-year-sel" @change="e=>onChartYear('ch17',+e.target.value)" @click.stop :value="chYear('ch17')"><option v-for="y in years" :value="y">{{y}}年</option></select>
+      <select class="ch-city-sel" @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity"><option value="">全国</option><option v-for="c in cities" :value="c">{{c}}</option></select>
+      <button class="zoom-btn" @click.stop="zoomChart('ch17','旭日图 · 城市等级层级')">⛶</button>
+      <div class="ch-title">🌅 省份-城市层级（旭日图） <span v-if="chYear('ch17')!==selectedYear" style="color:var(--yellow);font-size:10px;">[{{chYear('ch17')}}年]</span></div>
+      <div id="ch17" style="height:170px;"></div>
+    </div>
+  </div>
+  <!-- Right half: ch14 K-line -->
+  <div class="chart-card glass" style="flex:1;cursor:pointer;" @dblclick.stop="zoomChart('ch14','AQI月度波动（K线图）')">
+    <select class="ch-year-sel" @change="e=>onChartYear('ch14',+e.target.value)" @click.stop :value="chYear('ch14')"><option v-for="y in years" :value="y">{{y}}年</option></select>
+      <select class="ch-city-sel" @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity"><option value="">全国</option><option v-for="c in cities" :value="c">{{c}}</option></select>
+    <button class="zoom-btn" @click.stop="zoomChart('ch14','AQI月度波动（K线图）')">⛶</button>
+    <div class="ch-title">📊 AQI月度波动（K线图） <span v-if="chYear('ch14')!==selectedYear" style="color:var(--yellow);font-size:10px;">[{{chYear('ch14')}}年]</span></div>
+    <div id="ch14" style="height:170px;"></div>
+  </div>
+</div>
+
+<!-- MINI CHART OVERLAY -->
+<div class="mini-overlay" v-if="miniChart" @click.self="miniChart=null">
+  <div class="mini-card">
+    <span class="mini-close" @click="miniChart=null">✕</span>
+    <div class="mini-title">{{ miniChart==='ch10'?'🏅 城市空气改善排行榜':'🧪 主要污染物多年变化'}}</div>
+    <div style="margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+      <span style="color:var(--muted);font-size:11px;">年份：</span>
+      <select @change="e=>onChartYear(miniChart,+e.target.value)" :value="chYear(miniChart)" style="background:rgba(0,0,0,0.6);color:var(--cyan);border:1px solid rgba(0,229,208,0.3);border-radius:3px;padding:2px 8px;font-size:12px;cursor:pointer;outline:none;">
+        <option v-for="y in years" :value="y">{{y}}年</option>
+      </select>
+    </div>
+    <div :id="'mini-'+miniChart" class="mini-chart"></div>
+  </div>
+</div>
+
+<!-- RANK MINI OVERLAY -->
+<div class="mini-overlay" v-if="miniRankOverlay" @click.self="miniRankOverlay=null">
+  <div class="mini-card" style="width:420px;">
+    <span class="mini-close" @click="miniRankOverlay=null">✕</span>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      <div class="mini-title" style="margin-bottom:0;">{{ miniRankOverlay==='best'?'🏆 空气最佳城市排行':'🔻 污染警示城市排行' }}</div>
+      <span style="color:var(--muted);font-size:11px;">显示</span>
+      <select v-model="listMode" @change="expandMore()" style="background:rgba(0,0,0,0.6);color:var(--cyan);border:1px solid rgba(0,229,208,0.3);border-radius:3px;padding:2px 8px;font-size:12px;cursor:pointer;outline:none;">
+        <option value="">Top 10</option>
+        <option value="best20">Top 20</option>
+        <option value="best50">Top 50</option>
+        <option value="bestAll">全部</option>
+      </select>
+    </div>
+    <div style="max-height:380px;overflow-y:auto;overflow-x:hidden;">
+      <div class="rank-item" v-for="(c,i) in displayTopCities" :key="'mr'+i" @click="selectCity(c.city);miniRankOverlay=null">
+        <span class="rbadge" :class="miniRankOverlay==='best'?'g':'b'">{{ i+1 }}</span>
+        <span class="rname">{{ c.city }}</span>
+        <span class="rval">AQI {{ c.avg_aqi }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- ZOOM OVERLAY -->
+<div class="zoom-overlay" v-show="zoomVisible" @click.self="closeZoom">
+  <span class="zoom-close" @click="closeZoom">✕</span>
+  <div class="zoom-title">{{ zoomTitle }} <span v-if="selectedCity" style="color:#ffc107;font-size:15px;">— {{ selectedCity }}</span></div>
+  <div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+    <span style="color:var(--muted);font-size:12px;">年份：</span>
+    <select @change="e=>onZoomYear(+e.target.value)" :value="chYear(zoomChartId)" style="background:rgba(0,0,0,0.6);color:var(--cyan);border:1px solid rgba(0,229,208,0.3);border-radius:4px;padding:4px 10px;font-size:13px;cursor:pointer;outline:none;">
+      <option v-for="y in years" :value="y">{{y}}年</option>
+    </select>
+    <span style="color:var(--muted);font-size:12px;margin-left:12px;">城市：</span>
+    <select @change="e=>{selectCity(e.target.value)}" @click.stop :value="selectedCity" style="background:rgba(0,0,0,0.6);color:var(--blue);border:1px solid rgba(77,171,247,0.3);border-radius:4px;padding:4px 10px;font-size:13px;cursor:pointer;outline:none;max-width:120px;">
+      <option value="">全国</option>
+      <option v-for="c in cities" :value="c">{{c}}</option>
+    </select>
+  </div>
+  <div :id="'zoom-'+zoomChartId" :key="zoomChartId" class="zoom-chart" v-if="zoomChartId!=='ch7' && zoomChartId!=='ch9'"></div>
+  <!-- Pre-created heatmap containers (always in DOM via v-show, hidden by default) -->
+  <div id="zoom-hm-ch7" class="zoom-chart" style="display:none;"></div>
+  <div id="zoom-hm-ch9" class="zoom-chart" style="display:none;"></div>
+</div>
+<!-- KPI MODAL -->
+<div class="kpi-overlay" v-if="kpiVisible" @click.self="kpiVisible=false">
+  <div class="kpi-modal">
+    <span class="zoom-close" @click="kpiVisible=false">✕</span>
+    <div class="sec-label" style="margin-bottom:12px;font-size:16px;">📊 核心指标面板</div>
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="lbl">年均 AQI</div><div class="val">{{ overview.avg_aqi||'--' }}</div><div class="sub" :class="overview.year_over_year_change<0?'g':'b'">{{ overview.year_over_year_change?((overview.year_over_year_change>0?'↑':'↓')+Math.abs(overview.year_over_year_change).toFixed(1)+'%'):'' }}</div></div>
+      <div class="kpi-card"><div class="lbl">优良天数比</div><div class="val">{{ goodDayRatio }}%</div><div class="sub i">优+良等级</div></div>
+      <div class="kpi-card"><div class="lbl">🍃 最佳城市</div><div class="val sm">{{ overview.best_city||'--' }}</div><div class="sub g">AQI {{ overview.best_city_aqi }}</div></div>
+      <div class="kpi-card"><div class="lbl">⚠️ 最重城市</div><div class="val sm">{{ overview.worst_city||'--' }}</div><div class="sub b">AQI {{ overview.worst_city_aqi }}</div></div>
+      <div class="kpi-card"><div class="lbl">监测城市</div><div class="val">{{ overview.total_cities||'--' }}</div><div class="sub i">{{ overview.total_days?(overview.total_days/10000).toFixed(1)+'万条':'' }}</div></div>
+      <div class="kpi-card"><div class="lbl">🔴 重污染天</div><div class="val">{{ heavyPollutionDays }}</div><div class="sub b">重度+严重</div></div>
+      <div class="kpi-card"><div class="lbl">📅 最佳月份</div><div class="val sm">{{ bestMonth }}</div><div class="sub g">AQI最低</div></div>
+      <div class="kpi-card"><div class="lbl">⚠️ 最差月份</div><div class="val sm">{{ worstMonth }}</div><div class="sub b">AQI最高</div></div>
+      <div class="kpi-card"><div class="lbl">🧪 首要污染物</div><div class="val sm">{{ primaryPollutant }}</div><div class="sub i">全国统计</div></div>
+      <div class="kpi-card"><div class="lbl">PM2.5/PM10</div><div class="val sm">{{ pmRatio }}</div><div class="sub i">比值</div></div>
+      <div class="kpi-card"><div class="lbl">🏭 污染事件</div><div class="val">{{ episodeCount }}</div><div class="sub b">次数</div></div>
+      <div class="kpi-card"><div class="lbl">📈 改善最多</div><div class="val sm">{{ mostImprovedCity }}</div><div class="sub g">年度对比</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- POLICY MODAL -->
+<div class="kpi-overlay" v-if="policyVisible" @click.self="policyVisible=false">
+  <div class="kpi-modal">
+    <span class="zoom-close" @click="policyVisible=false">✕</span>
+    <div class="sec-label" style="margin-bottom:12px;font-size:16px;">📋 基于数据分析的政策建议</div>
+    <div style="line-height:2.2;font-size:14px;color:var(--text);" v-html="policyText"></div>
+  </div>
+</div>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const { createApp, ref, reactive, onMounted, nextTick, watch } = Vue;
+
+// ===== 3D CHINA PROVINCE MAP =====
+// Exact bounds from china_provinces.json (full detail): lng=[73.502,135.096], lat=[3.824,53.563]
+const CN_BOUNDS={minLng:73.502,maxLng:135.096,minLat:3.824,maxLat:53.563};
+const MAP_W=7;
+const MAP_H=MAP_W*(CN_BOUNDS.maxLat-CN_BOUNDS.minLat)/(CN_BOUNDS.maxLng-CN_BOUNDS.minLng);
+
+let scene,camera,renderer,controls,mapGroup,provinceGroup,markerGroup;
+let clock;
+let selectedMarker,selectedProvince,raycaster,mouse;
+let targetCamPos=null,targetLookAt=null;
+let provinceData=[];
+let provinceObjects={};
+let provinceCenters={};
+
+function lngLatToMap(lng,lat){
+  const x=((lng-CN_BOUNDS.minLng)/(CN_BOUNDS.maxLng-CN_BOUNDS.minLng)-0.5)*MAP_W;
+  // Z: north → -Z (viewport top), south → +Z (viewport bottom)
+  const z=((CN_BOUNDS.maxLat-lat)/(CN_BOUNDS.maxLat-CN_BOUNDS.minLat)-0.5)*MAP_H;
+  return new THREE.Vector3(x,0,z);
+}
+
+function beamColor(aqi){
+  const h=0.55+(Math.min(aqi,300)/300)*0.22;
+  return new THREE.Color().setHSL(h,0.9,0.45);
+}
+
+function makeLabel(text){
+  const c=document.createElement('canvas');c.width=400;c.height=72;
+  const ctx=c.getContext('2d');
+  // Pill background
+  const tw=ctx.measureText(text).width||120;
+  const pw=Math.max(tw+36,140),ph=38,px=(400-pw)/2,py=(72-ph)/2;
+  ctx.shadowColor='rgba(0,200,255,0.35)';ctx.shadowBlur=8;
+  ctx.beginPath();ctx.roundRect(px,py,pw,ph,16);ctx.fillStyle='rgba(2,8,16,0.5)';ctx.fill();
+  ctx.strokeStyle='rgba(0,229,208,0.22)';ctx.lineWidth=1;ctx.stroke();
+  ctx.shadowBlur=0;
+  ctx.font='bold 20px "PingFang SC","Microsoft YaHei",sans-serif';
+  ctx.fillStyle='#d0f0f8';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,200,255,0.4)';ctx.shadowBlur=4;
+  ctx.fillText(text,200,38);ctx.shadowBlur=0;
+  const tex=new THREE.CanvasTexture(c);tex.minFilter=THREE.LinearFilter;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:true,depthWrite:false,opacity:0.85}));
+  sp.scale.set(0.8,0.15,1);return sp;
+}
+
+function createProvinceMaterial(state='default'){
+  const states={
+    default:{color:0x0a1e35,emissive:0x001a33,emissiveIntensity:0.4},
+    hover:{color:0x0d2a48,emissive:0x003366,emissiveIntensity:0.7},
+    selected:{color:0x103558,emissive:0x004488,emissiveIntensity:1.0}
+  };
+  const s=states[state]||states.default;
+  return new THREE.MeshPhongMaterial({
+    color:s.color,emissive:s.emissive,emissiveIntensity:s.emissiveIntensity,
+    specular:0x112233,shininess:20,transparent:true,opacity:0.85
+  });
+}
+const edgeMat=new THREE.LineBasicMaterial({color:0x00ccaa,transparent:true,opacity:0.7});
+
+function createProvinceMesh(pData){
+  const group=new THREE.Group();
+  group.name=pData.name;
+  pData.polygons.forEach(ring=>{
+    if(ring.length<3)return;
+    const shape=new THREE.Shape();
+    const projected=ring.map(([lng,lat])=>{
+      const p=lngLatToMap(lng,lat);
+      return [p.x,p.z];
+    });
+    shape.moveTo(projected[0][0],projected[0][1]);
+    for(let i=1;i<projected.length;i++)shape.lineTo(projected[i][0],projected[i][1]);
+    const geo=new THREE.ExtrudeGeometry(shape,{steps:1,depth:0.18,bevelEnabled:true,bevelThickness:0.04,bevelSize:0.04,bevelSegments:3});
+    // rotate so front face faces +Y (upward, toward camera from above)
+    geo.rotateX(Math.PI/2);
+    geo.translate(0,0.02,0);
+    geo.computeVertexNormals();
+    const mesh=new THREE.Mesh(geo,createProvinceMaterial('default'));
+    mesh.userData={provinceName:pData.name,isProvince:true};
+    group.add(mesh);
+    const eGeo=new THREE.EdgesGeometry(geo,25);
+    const edgeLine=new THREE.LineSegments(eGeo,edgeMat.clone());
+    edgeLine.position.y=0.005;
+    edgeLine.userData={isEdge:true};
+    group.add(edgeLine);
+  });
+  const cp=lngLatToMap(pData.center[0],pData.center[1]);
+  group.userData={provinceName:pData.name,cityCount:pData.cityCount,centerOnMap:cp};
+  return group;
+}
+
+async function initChinaMap(){
+  const container=document.getElementById('globe-container');
+  const w=container.clientWidth,h=container.clientHeight;
+
+  const tip=document.getElementById('globe-tip');
+  tip.style.display='block';tip.textContent='正在加载地图数据...';
+  tip.style.left='50%';tip.style.top='50%';tip.style.transform='translate(-50%,-50%)';
+
+  try{
+    const resp=await fetch('china_map_data.json');
+    const mapJson=await resp.json();
+    provinceData=mapJson.provinces||mapJson; // handle both old array and new wrapped format
+    console.log('[Map] Loaded '+provinceData.length+' provinces, source: '+(mapJson.source||'legacy'));
+  }catch(e){
+    console.error('[Map] Failed:',e);
+    tip.textContent='地图数据加载失败，请刷新重试';
+    return;
+  }
+  tip.style.display='none';tip.style.transform='';
+
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x020810);
+
+  camera=new THREE.PerspectiveCamera(42,w/h,0.1,1000);
+  camera.position.set(0,8,22);camera.lookAt(0,0,0);
+
+  renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setSize(w,h);renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.8));
+  container.appendChild(renderer.domElement);
+
+  controls=new OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true;controls.dampingFactor=0.08;
+  controls.autoRotate=false;controls.autoRotateSpeed=0.3;
+  controls.minDistance=0.8;controls.maxDistance=20;
+  controls.maxPolarAngle=Math.PI*0.52;controls.target.set(0,0.1,0);controls.update();
+  // Start fly-in from far position → centered 80% view
+  targetCamPos=new THREE.Vector3(0,3.2,5.5);
+  targetLookAt=new THREE.Vector3(0,0.1,0);
+
+  scene.add(new THREE.AmbientLight(0x334466,2.5));
+  const sun=new THREE.DirectionalLight(0xffffff,3.5);sun.position.set(6,10,8);scene.add(sun);
+  const rl=new THREE.DirectionalLight(0x4488cc,1.8);rl.position.set(-5,2,-6);scene.add(rl);
+
+  // Stars
+  const sg=new THREE.BufferGeometry();
+  const sp=new Float32Array(3000*3);
+  for(let i=0;i<3000;i++){const r2=22+Math.random()*35,th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);sp[i*3]=r2*Math.sin(ph)*Math.cos(th);sp[i*3+1]=r2*Math.sin(ph)*Math.sin(th);sp[i*3+2]=r2*Math.cos(ph);}
+  sg.setAttribute('position',new THREE.BufferAttribute(sp,3));
+  scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0x8899cc,size:0.05,transparent:true,opacity:0.5})));
+
+  mapGroup=new THREE.Group();scene.add(mapGroup);
+
+  // Provinces
+  provinceGroup=new THREE.Group();mapGroup.add(provinceGroup);
+  provinceData.forEach(pData=>{
+    const pMesh=createProvinceMesh(pData);
+    provinceGroup.add(pMesh);
+    provinceObjects[pData.name]={group:pMesh,highlighted:false};
+    provinceCenters[pData.name]=pMesh.userData.centerOnMap;
+  });
+  console.log('[Map] Created '+Object.keys(provinceObjects).length+' province meshes');
+
+  // Markers
+  markerGroup=new THREE.Group();mapGroup.add(markerGroup);
+
+  // Raycaster
+  raycaster=new THREE.Raycaster();mouse=new THREE.Vector2();
+  renderer.domElement.addEventListener('click',onClick);
+  renderer.domElement.addEventListener('mousemove',onHover);
+  renderer.domElement.addEventListener('dblclick',onDblClick);
+
+  clock=new THREE.Clock();
+  function anim(){
+    requestAnimationFrame(anim);
+    const t=clock.getElapsedTime();
+    // Subtle floating
+    mapGroup.position.y=Math.sin(t*0.55)*0.15;
+    // Selected province emissive pulse
+    if(selectedProvince&&provinceObjects[selectedProvince]&&provinceObjects[selectedProvince].highlighted){
+      const pulse=0.7+Math.sin(t*3.5)*0.2;
+      provinceObjects[selectedProvince].group.traverse(ch=>{
+        if(ch.isMesh&&ch.userData.isProvince)ch.material.emissiveIntensity=pulse;
+      });
+    }
+    // Camera lerp
+    if(targetCamPos){
+      camera.position.lerp(targetCamPos,0.1);
+      controls.target.lerp(targetLookAt||new THREE.Vector3(0,0.1,0),0.1);
+      if(camera.position.distanceTo(targetCamPos)<0.05){
+        targetCamPos=null;
+        controls.autoRotate=true;
+      }
+    }
+    controls.update();
+    renderer.render(scene,camera);
+  }
+  anim();
+
+  window.addEventListener('resize',()=>{
+    const w2=container.clientWidth,h2=container.clientHeight;
+    camera.aspect=w2/h2;camera.updateProjectionMatrix();renderer.setSize(w2,h2);
+  });
+}
+
+// === INTERACTION ===
+
+function getClickedMarker(e){
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const hits=raycaster.intersectObjects(markerGroup.children,true);
+  if(hits.length>0){
+    let obj=hits[0].object;
+    while(obj&&obj.parent!==markerGroup)obj=obj.parent;
+    if(obj&&obj.userData.cityName)return obj;
+  }
+  return null;
+}
+
+function getClickedProvince(e){
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+  const meshes=[];
+  provinceGroup.traverse(c=>{if(c.isMesh&&c.userData.isProvince)meshes.push(c);});
+  const hits=raycaster.intersectObjects(meshes,false);
+  if(hits.length>0)return hits[0].object.userData.provinceName;
+  return null;
+}
+
+function highlightProvince(pName){
+  if(selectedProvince&&provinceObjects[selectedProvince]){
+    const prev=provinceObjects[selectedProvince];
+    prev.group.traverse(ch=>{
+      if(ch.isMesh&&ch.userData.isProvince){ch.material.color.set(0x0a1e35);ch.material.emissive.set(0x001a33);ch.material.emissiveIntensity=0.4;}
+      if(ch.userData&&ch.userData.isEdge){ch.material.color.set(0x00ccaa);ch.material.opacity=0.7;}
+    });
+    prev.highlighted=false;
+  }
+  if(pName&&provinceObjects[pName]){
+    const cur=provinceObjects[pName];
+    cur.group.traverse(ch=>{
+      if(ch.isMesh&&ch.userData.isProvince){ch.material.color.set(0x103558);ch.material.emissive.set(0x004488);ch.material.emissiveIntensity=1.0;}
+      if(ch.userData&&ch.userData.isEdge){ch.material.color.set(0x00ffee);ch.material.opacity=1.0;}
+    });
+    cur.highlighted=true;
+  }
+  selectedProvince=pName||null;
+}
+
+function zoomToProvince(pName){
+  if(!pName||!provinceCenters[pName])return;
+  const center=provinceCenters[pName].clone();
+  mapGroup.localToWorld(center);
+  // Tight zoom: close overhead view
+  targetCamPos=center.clone().add(new THREE.Vector3(0,1.8,1.2));
+  targetLookAt=center.clone();
+}
+
+
+function onClick(e){
+  const marker=getClickedMarker(e);
+  if(marker){
+    document.dispatchEvent(new CustomEvent('globe-select',{detail:{city:marker.userData.cityName}}));
+    highlightMarker(marker);
+    const wp=marker.position.clone();mapGroup.localToWorld(wp);
+    targetCamPos=wp.clone().add(new THREE.Vector3(0,1.8,0.8));
+    targetLookAt=wp.clone();
+    return;
+  }
+  // Check label sprite click
+  if(window._labelGroup){
+    const labelHits=raycaster.intersectObjects(window._labelGroup.children,true);
+    if(labelHits.length>0){
+      const sprite=labelHits[0].object;
+      if(sprite.userData.isLabel){
+        // Find closest entry by position
+        const sp=sprite.position; let best=null,bestDist=Infinity;
+        if(window._labelEntries){ for(const en of window._labelEntries){
+          const d=Math.hypot(sp.x-en.labelPos.x,sp.z-en.labelPos.z);
+          if(d<bestDist){bestDist=d;best=en;}
+        }}
+        if(best&&bestDist<0.3){
+          selectCity(best.city);
+          const wp2=best.pinPos.clone();mapGroup.localToWorld(wp2);
+          targetCamPos=wp2.clone().add(new THREE.Vector3(0,1.8,0.8));
+          targetLookAt=wp2.clone();
+          return;
+        }
+      }
+    }
+  }
+  const pName=getClickedProvince(e);
+  if(pName){
+    highlightProvince(pName);
+    zoomToProvince(pName);
+    return;
+  }
+  highlightProvince(null);
+  targetCamPos=new THREE.Vector3(0,4.2,7.2);
+  targetLookAt=new THREE.Vector3(0,0.1,0);
+}
+
+function onDblClick(){
+  highlightProvince(null);
+  targetCamPos=new THREE.Vector3(0,4.2,7.2);
+  targetLookAt=new THREE.Vector3(0,0.1,0);
+}
+
+function onHover(e){
+  const rect=renderer.domElement.getBoundingClientRect();
+  mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+  mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+  raycaster.setFromCamera(mouse,camera);
+
+  const markerHits=raycaster.intersectObjects(markerGroup.children,true);
+  const tip=document.getElementById('globe-tip');
+  if(markerHits.length>0){
+    let obj=markerHits[0].object;
+    while(obj&&obj.parent!==markerGroup)obj=obj.parent;
+    if(obj&&obj.userData.cityName){
+      const aqi=obj.userData.avgAqi;
+      tip.style.display='block';tip.style.transform='';
+      let l=Math.min(e.clientX-rect.left+18,rect.width-160);
+      let t=Math.max(e.clientY-rect.top-55,8);
+      tip.style.left=l+'px';tip.style.top=t+'px';
+      tip.innerHTML='<span class="tip-city">'+obj.userData.cityName+'</span> AQI '+aqi.toFixed(1);
+      renderer.domElement.style.cursor='pointer';
+      return;
+    }
+  }
+  const meshes=[];
+  provinceGroup.traverse(c=>{if(c.isMesh&&c.userData.isProvince)meshes.push(c);});
+  const provHits=raycaster.intersectObjects(meshes,false);
+  if(provHits.length>0&&selectedProvince!==provHits[0].object.userData.provinceName){
+    const pName=provHits[0].object.userData.provinceName;
+    const pData=provinceData.find(p=>p.name===pName);
+    tip.style.display='block';tip.style.transform='';
+    let l=Math.min(e.clientX-rect.left+18,rect.width-120);
+    let t=Math.max(e.clientY-rect.top-55,8);
+    tip.style.left=l+'px';tip.style.top=t+'px';
+    tip.innerHTML='<span class="tip-city">'+pName+'</span><span class="tip-prov">'+(pData?' '+pData.cityCount+'市':'')+'</span>';
+    renderer.domElement.style.cursor='pointer';
+    return;
+  }
+  tip.style.display='none';tip.style.transform='';
+  renderer.domElement.style.cursor='default';
+}
+
+function highlightMarker(grp){
+  if(selectedMarker){
+    selectedMarker.children.forEach(ch=>{if(ch.material&&ch.material.emissiveIntensity!==undefined)ch.material.emissiveIntensity=0.5;});
+  }
+  selectedMarker=grp;
+  grp.children.forEach(ch=>{
+    if(ch.material&&ch.material.emissiveIntensity!==undefined)ch.material.emissiveIntensity=1.5;
+    if(ch.material&&ch.material.emissive)ch.material.emissive.set(0x00ffcc);
+  });
+}
+
+function simpleHash(str){
+  let h=0;for(let i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0;}
+  return Math.abs(h%1000)/1000;
+}
+
+function updateMarkers(data){
+  while(markerGroup.children.length>0)markerGroup.remove(markerGroup.children[0]);
+  if(!data||!data.length)return;
+  console.log('[Map] Rendering city markers');
+  const seen=new Set();
+  let count=0;
+  const maxPins=200;
+  data.forEach(d=>{
+    if(count>=maxPins)return;
+    if(seen.has(d.city))return;seen.add(d.city);
+    const aqi=d.avg_aqi;if(!aqi||aqi<=0)return;
+    if(!d.rank||d.rank>200)return;
+    const pos=lngLatToMap(d.lng,d.lat);
+    const aqiNorm=Math.min(aqi,300)/300;
+    const col=beamColor(aqi);
+    const size=0.04+aqiNorm*0.06;
+    const pinGeo=new THREE.ConeGeometry(size,size*2,5);
+    const pinMat=new THREE.MeshStandardMaterial({
+      color:col,emissive:col,emissiveIntensity:0.35,
+      roughness:0.3,metalness:0.2,transparent:true,opacity:0.8
+    });
+    const pin=new THREE.Mesh(pinGeo,pinMat);
+    const dotGeo=new THREE.SphereGeometry(size*0.35,5,4);
+    const dotMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.8});
+    const dot=new THREE.Mesh(dotGeo,dotMat);
+    dot.position.y=size*1.15;
+    const grp=new THREE.Group();grp.add(pin);grp.add(dot);
+    grp.position.set(pos.x,0.18,pos.z);
+    grp.userData={cityName:d.city,avgAqi:aqi};
+    markerGroup.add(grp);
+    count++;
+  });
+  console.log('[Map] '+count+' city markers');
+}
+
+function addCityLabels(data){
+  if(window._labelGroup){
+    mapGroup.remove(window._labelGroup);
+    window._labelGroup.traverse(obj=>{
+      if(obj.geometry)obj.geometry.dispose();
+      if(obj.material)obj.material.dispose();
+    });
+    window._labelGroup=null;
+  }
+  if(!data||!data.length)return;
+  const seen=new Set();
+  const entries=[];
+  data.forEach(d=>{
+    if(seen.has(d.city))return; seen.add(d.city);
+    const aqi=d.avg_aqi; if(!aqi||aqi<=0)return;
+    if(!d.rank||d.rank>200)return;
+    const pinPos=lngLatToMap(d.lng,d.lat);
+    // Start label at pin position (no initial outward push)
+    const labelPos=new THREE.Vector3(pinPos.x,0.5,pinPos.z);
+    entries.push({city:d.city, pinPos:pinPos.clone(), labelPos, lat:d.lat, lng:d.lng});
+  });
+  // Gentle repulsion to prevent overlap
+  const repelRadius=0.4;
+  for(let iter=0; iter<40; iter++){
+    for(let i=0; i<entries.length; i++){
+      let fx=0,fz=0;
+      const li=entries[i];
+      for(let j=0; j<entries.length; j++){
+        if(i===j)continue;
+        const lj=entries[j];
+        const dx=li.labelPos.x-lj.labelPos.x;
+        const dz=li.labelPos.z-lj.labelPos.z;
+        const d2=dx*dx+dz*dz;
+        if(d2<repelRadius*repelRadius&&d2>0.0001){
+          const dist=Math.sqrt(d2);
+          const strength=0.008/(d2+0.01);
+          fx+=(dx/dist)*strength;
+          fz+=(dz/dist)*strength;
+        }
+      }
+      // Spring force back to pin
+      fx+=(li.pinPos.x-li.labelPos.x)*0.08;
+      fz+=(li.pinPos.z-li.labelPos.z)*0.08;
+      // Top-region bias: push labels above 40°N outward to avoid blocking globe top edge
+      if(li.lat>40){
+       const r=Math.hypot(li.labelPos.x,li.labelPos.z);
+       if(r<1.2){ const push=(1.2-r)*0.06; fx-=(li.labelPos.x/(r||0.01))*push; fz-=(li.labelPos.z/(r||0.01))*push; }
+      }
+      // Clamp to map bounds
+      const bound=2.8;
+      li.labelPos.x=Math.max(-bound,Math.min(bound,li.labelPos.x+fx));
+      li.labelPos.z=Math.max(-bound,Math.min(bound,li.labelPos.z+fz));
+    }
+  }
+  const group=new THREE.Group();
+  group.name='cityLabels';
+  const lineMat=new THREE.LineBasicMaterial({color:0x00ddbb,transparent:true,opacity:0.07});
+  entries.forEach(entry=>{
+    // Leader line
+    const p1=new THREE.Vector3(entry.pinPos.x,0.28,entry.pinPos.z);
+    const p2=new THREE.Vector3(entry.pinPos.x+(entry.labelPos.x-entry.pinPos.x)*0.4,0.4,entry.pinPos.z+(entry.labelPos.z-entry.pinPos.z)*0.4);
+    const p3=entry.labelPos.clone();
+    const lineGeo=new THREE.BufferGeometry().setFromPoints([p1,p2,p3]);
+    group.add(new THREE.Line(lineGeo,lineMat));
+    // Label sprite
+    const sprite=makeLabel(entry.city);
+    sprite.position.copy(entry.labelPos);
+    sprite.userData={isLabel:true};
+    group.add(sprite);
+  });
+  window._labelGroup=group;
+  window._labelEntries=entries;
+  mapGroup.add(group);
+}
+
+// ===== VUE APP =====
+const app=createApp({
+ setup(){
+  const loading=ref(true);
+  const allYears=ref([]),years=ref([]),cities=ref([]),selectedYear=ref(2022),selectedCity=ref('');
+  const cityDataMap=reactive({}); // cityName -> [available years]
+  const overview=reactive({avg_aqi:null,best_city:'',best_city_aqi:null,worst_city:'',worst_city_aqi:null,total_cities:0,total_days:0,year_over_year_change:0});
+  const top10Cities=ref([]),bottom10Cities=ref([]);
+  const displayTopCities=ref([]);
+  const listMode=ref('');
+  const temporalData=ref(null),pollutantData=ref(null),qualityData=ref(null),advancedData=ref(null),spatialData=ref(null);
+  const goodDayRatio=ref(0),heavyPollutionDays=ref(0),worstMonth=ref(''),bestMonth=ref('');
+  const primaryPollutant=ref(''),pmRatio=ref(''),episodeCount=ref(0),pm25City=ref(''),mostImprovedCity=ref('');
+  const allYearAvgAQI=ref('--'),bestYearStat=ref('--'),worstYearStat=ref('--'),tenYearImprove=ref('--'),nationalGoodRate=ref('--');
+  const policyText=ref('');
+  // Zoom
+  const zoomVisible=ref(false),zoomChartId=ref(''),zoomTitle=ref('');
+  const kpiVisible=ref(false);
+  const policyVisible=ref(false);
+  const isFullscreen=ref(false);
+  const miniChart=ref(null); // 'ch10' or 'ch11'
+  const miniRankOverlay=ref(null); // 'best' or 'worst' or null
+  const charts={},zoomInstance=ref(null);
+
+  // Per-chart year overrides (chartId → year, null = follow global)
+  const chartYearOverrides=reactive({});
+  // Data cache: key = "endpoint/year/city" → response JSON
+  const dataCache=reactive({});
+
+  function log(msg,d){console.log('[Dashboard] '+msg,d||'');}
+
+  function chYear(chartId){
+   return chartYearOverrides[chartId]||selectedYear.value;
+  }
+
+
+  async function onChartYear(chartId, year){
+   // Clear all per-chart overrides & set global year -> watcher triggers full reload for all charts
+   Object.keys(chartYearOverrides).forEach(k=>{chartYearOverrides[k]=undefined;});
+   selectedYear.value=year;
+  }
+
+  // Fetch per-chart data for a specific year and re-render
+  async function refreshChartData(chartId, year){
+   const city=selectedCity.value||'';
+   let key, url, dataRef;
+   if(['ch1','ch2','ch12','ch14','ch15','ch17'].includes(chartId)){
+    key='temporal/'+year+'/'+city; url='/api/temporal?year='+year+'&city='+city; dataRef='temporal';
+   }else if(['ch7','ch11'].includes(chartId)){
+    key='pollutants/'+year+'/'+city; url='/api/pollutants?year='+year+'&city='+city; dataRef='pollutant';
+   }else if(['ch9','ch13','ch16'].includes(chartId)){
+    key='quality/'+year+'/'+city; url='/api/quality?year='+year+'&city='+city; dataRef='quality';
+   }else if(['ch8','ch10'].includes(chartId)){
+    key='spatial/'+year; url='/api/spatial?year='+year; dataRef='spatial';
+   }else if(['ch4','ch5','ch6'].includes(chartId)){
+    key='advanced/'+year; url='/api/advanced?year='+year; dataRef='advanced';
+   }
+   if(key&&!dataCache[key]){
+    try{const d=await fetchJSON(url);dataCache[key]=d;}catch(e){console.error('refreshChartData fetch:',e);return;}
+   }
+   // Point the reactive ref to the per-chart cached data temporarily
+   if(dataRef==='temporal')temporalData.value=dataCache[key];
+   else if(dataRef==='pollutant')pollutantData.value=dataCache[key];
+   else if(dataRef==='quality')qualityData.value=dataCache[key];
+   else if(dataRef==='spatial')spatialData.value=dataCache[key];
+   else if(dataRef==='advanced')advancedData.value=dataCache[key];
+   updateChartById(chartId);
+  }
+
+  function updateChartById(id){
+   const fns={ch1:u1,ch2:u2,ch4:u4,ch5:u5,ch6:u6,ch7:u7,ch8:u8,ch9:u9,ch10:u10,ch11:u11,ch12:u12,ch13:u13,ch14:u14,ch15:u15,ch16:u16,ch17:u17};
+   const fn=fns[id];
+   if(fn){try{fn();}catch(e){console.error(id+':',e);}}
+  }
+
+  async function fetchJSON(url){const r=await fetch(url);if(!r.ok)throw new Error(`HTTP ${r.status}: ${url}`);return r.json();}
+
+  async function fetchAll(){
+   loading.value=true;
+   try{
+    const yr=selectedYear.value,city=selectedCity.value;
+    const cp=city?`&city=${encodeURIComponent(city)}`:'';
+    log('Fetching year='+yr+' city='+(city||'all'));
+    const[ov,temp,spat,poll,qual,adv]=await Promise.all([
+     fetchJSON(`/api/overview?year=${yr}`),
+     fetchJSON(`/api/temporal?year=${yr}${cp}`),
+     fetchJSON(`/api/spatial?year=${yr}`),
+     fetchJSON(`/api/pollutants?year=${yr}${cp}`),
+     fetchJSON(`/api/quality?year=${yr}${cp}`),
+     fetchJSON(`/api/advanced?year=${yr}`),
+    ]);
+    // Cache globally fetched data
+    dataCache['temporal/'+yr+'/'+city]=temp;
+    dataCache['spatial/'+yr+'/']=spat;
+    dataCache['pollutants/'+yr+'/'+city]=poll;
+    dataCache['quality/'+yr+'/'+city]=qual;
+    dataCache['advanced/'+yr+'/']=adv;
+
+    Object.assign(overview,ov);
+    temporalData.value=temp;
+    spatialData.value=spat;
+    // city_ranking is sorted by AQI descending (worst first)
+    const rankingAll=spat.city_ranking||[];
+    const totalCnt=rankingAll.length;
+    top10Cities.value=rankingAll.slice(Math.max(0,totalCnt-10)).reverse(); // Best 10 (lowest AQI)
+    bottom10Cities.value=rankingAll.slice(0,10); // Worst 10 (highest AQI)
+    displayTopCities.value=top10Cities.value;
+    log('top10='+top10Cities.value.length+' bottom10='+bottom10Cities.value.length);
+    pollutantData.value=poll;
+    qualityData.value=qual;
+    advancedData.value=adv;
+    updateMarkers(spat.city_ranking||[]);
+    // Re-apply current list mode after data refresh
+    expandMore();
+
+    const qd=qual.level_distribution||{};
+    const td=ov.total_days||1;
+    goodDayRatio.value=(((qd['优']?.count||0)+(qd['良']?.count||0))/td*100).toFixed(1);
+    heavyPollutionDays.value=(qd['重度污染']?.count||0)+(qd['严重污染']?.count||0);
+    bestMonth.value=temp.best_month?.month_name||'--';
+    worstMonth.value=temp.worst_month?.month_name||'--';
+    const pd=poll.primary_pollutant_distribution||[];
+    if(pd.length)primaryPollutant.value=pd.reduce((a,b)=>a.count>b.count?a:b).pollutant;
+    pmRatio.value=poll.pm_ratio_stats?.avg?.toFixed(2)||'--';
+    episodeCount.value=adv.pollution_episodes?.length||0;
+    const ranking=spat.city_ranking||[];
+    const pm25Sorted=[...ranking].sort((a,b)=>(b.avg_pm25||0)-(a.avg_pm25||0));
+    pm25City.value=pm25Sorted[0]?.city||'--';
+    // Most improved city (compare with first year's data)
+    mostImprovedCity.value='--';
+    generatePolicy(temp,qual,spat,poll,yr,adv);
+    await nextTick();
+    initAllCharts();
+    // Update charts that follow global year; per-chart-year charts update separately
+    updateAllGlobalCharts();
+    // Also update any charts with per-chart overrides
+    for(const [cid,chYr] of Object.entries(chartYearOverrides)){
+     if(chYr&&chYr!==yr){
+      await refreshChartData(cid, chYr);
+      updateChartById(cid);
+     }
+    }
+    // Compute most improved city
+    computeMostImproved(spat);
+    // Compute all-year comprehensive stats
+    const yoy=temp.yoy_comparison||[];
+    if(yoy.length){
+     allYearAvgAQI.value=(yoy.reduce((s,y)=>s+y.avg_aqi,0)/yoy.length).toFixed(1);
+     const bestY=yoy.reduce((a,b)=>a.avg_aqi<b.avg_aqi?a:b);
+     const worstY=yoy.reduce((a,b)=>a.avg_aqi>b.avg_aqi?a:b);
+     bestYearStat.value=bestY.year+'年 AQI '+bestY.avg_aqi.toFixed(1);
+     worstYearStat.value=worstY.year+'年 AQI '+worstY.avg_aqi.toFixed(1);
+     const first=yoy[0],last=yoy[yoy.length-1];
+     const impr=((first.avg_aqi-last.avg_aqi)/first.avg_aqi*100);
+     tenYearImprove.value=(impr>0?'↓':'↑')+Math.abs(impr).toFixed(1)+'%';
+    }
+    nationalGoodRate.value=(((qd['优']?.count||0)+(qd['良']?.count||0))/td*100).toFixed(1)+'%';
+    log('All charts updated');
+   }catch(e){console.error('fetchAll error:',e);}
+   finally{loading.value=false;}
+  }
+
+  async function computeMostImproved(spat){
+   // Compare current spatial data with first available year
+   const ranking=spat.city_ranking||[];
+   if(!ranking.length||years.value.length<2)return;
+   const firstYr=years.value[0];
+   const key='spatial/'+firstYr+'/';
+   try{
+    let oldData;
+    if(dataCache[key]){oldData=dataCache[key];}
+    else{oldData=await fetchJSON(`/api/spatial?year=${firstYr}`);dataCache[key]=oldData;}
+    const oldRank=oldData.city_ranking||[];
+    const oldMap={};
+    oldRank.forEach(r=>{oldMap[r.city]=r.avg_aqi;});
+    let bestCity='',bestImprove=0;
+    ranking.forEach(r=>{
+     if(oldMap[r.city]!==undefined){
+      const improve=oldMap[r.city]-r.avg_aqi;
+      if(improve>bestImprove){bestImprove=improve;bestCity=r.city;}
+     }
+    });
+    if(bestCity)mostImprovedCity.value=bestCity+' ↓'+bestImprove.toFixed(1);
+   }catch(e){}
+  }
+
+  function generatePolicy(yrData,qual,spat,poll,yr,adv){
+   const lines=[];
+   const city=selectedCity.value||'';
+   const m=yrData.monthly_trend||[];
+   const yoy=yrData.yoy_comparison||[];
+   const qd=qual.level_distribution||{};
+   const ranking=spat.city_ranking||[];
+   const pp=poll.primary_pollutant_distribution||[];
+   const goodDays=(qd['优']?.count||0)+(qd['良']?.count||0);
+   const totalDays=Object.values(qd).reduce((s,v)=>s+v.count,0)||1;
+   const goodPct=goodDays/totalDays*100;
+   const heavyDays=(qd['重度污染']?.count||0)+(qd['严重污染']?.count||0);
+
+   if(city){
+    const rank=yrData.rank||'--';
+    const totalCities=yrData.total_cities||'--';
+    const primaryPol=yrData.primary_pollutant||poll.primary_pollutant||'';
+    const pmRatio=yrData.pm_ratio||poll.pm_ratio||0;
+    const episodes=(adv&&adv.pollution_episodes)||[];
+
+    lines.push('<b style="color:#00e5d0;font-size:13px;">📍 '+city+' · '+yr+'年 专项政策建议</b>');
+
+    if(rank!=='--'){
+     const rankNum=parseInt(rank);
+     const pct=totalCities?Math.round(rankNum/totalCities*100):50;
+     if(pct<=20){
+      lines.push('▪ 🏆 排名全国 <b style="color:#20c997">第'+rankNum+'位/'+totalCities+'城</b>（前'+pct+'%），空气质量优秀，建议作为区域标杆推广治理经验。');
+     }else if(pct<=50){
+      lines.push('▪ 📊 排名全国 <b style="color:#4dabf7">第'+rankNum+'位/'+totalCities+'城</b>（前'+pct+'%），处于中上游水平，仍有提升空间。');
+     }else if(pct<=80){
+      lines.push('▪ ⚠️ 排名全国 <b style="color:#ffc107">第'+rankNum+'位/'+totalCities+'城</b>（后'+(100-pct)+'%），空气质量有待改善，需加大治理力度。');
+     }else{
+      lines.push('▪ 🔴 排名全国 <b style="color:#f03e3e">第'+rankNum+'位/'+totalCities+'城</b>（后'+(100-pct)+'%），污染较重，建议启动专项治理行动。');
+     }
+    }
+
+    if(primaryPol){
+     const polAdvice={'PM2.5':'加强扬尘管控、推进清洁取暖改造、严格工业烟尘排放标准、推广新能源汽车','PM10':'强化建筑工地和道路扬尘治理、增加城市绿化覆盖率、控制裸土面积','So2':'加快燃煤锅炉淘汰或超低排放改造、推广清洁能源替代、严格火电行业监管','No2':'优化交通结构、推广新能源车、加强机动车尾气检测、错峰生产减少工业排放','Co':'加强机动车尾气治理、推进钢铁行业超低排放改造、减少生物质露天焚烧','O3':'加强VOCs和NOx协同减排、石化化工行业泄漏检测修复、错峰喷涂作业、夏季臭氧预警'};
+     const advice=polAdvice[primaryPol]||'针对该污染物制定专项减排方案';
+     lines.push('▪ 🧪 首要污染物为 <b style="color:#ffc107">'+primaryPol+'</b>，建议：'+advice+'。');
+    }
+
+    if(pmRatio>0){
+     if(pmRatio>0.65){
+      lines.push('▪ 🔬 PM2.5/PM10比值 <b style="color:#f03e3e">'+pmRatio.toFixed(2)+'</b>（偏高），细颗粒物占主导，以二次转化/燃烧源为主，重点控制工业和机动车排放。');
+     }else if(pmRatio>0.45){
+      lines.push('▪ 🔬 PM2.5/PM10比值 <b style="color:#ffc107">'+pmRatio.toFixed(2)+'</b>（中等），粗细颗粒物混合，兼顾燃烧源和扬尘源双重管控。');
+     }else{
+      lines.push('▪ 🔬 PM2.5/PM10比值 <b style="color:#4dabf7">'+pmRatio.toFixed(2)+'</b>（偏低），粗颗粒物占主导，以扬尘/沙尘为主，强化建筑工地和裸土治理。');
+     }
+    }
+
+    if(goodPct>85){
+     lines.push('▪ 🌿 优良天数占比 <b style="color:#20c997">'+goodPct.toFixed(1)+'%</b>，处于优秀水平，建议保持管控措施，推动从达标向优质转变。');
+    }else if(goodPct>70){
+     lines.push('▪ 🌤️ 优良天数占比 <b style="color:#4dabf7">'+goodPct.toFixed(1)+'%</b>，处于良好水平，重点补齐冬季短板，力争优良率突破80%。');
+    }else if(goodPct>55){
+     lines.push('▪ ⛅ 优良天数占比 <b style="color:#ffc107">'+goodPct.toFixed(1)+'%</b>，处于一般水平，建议加强重污染天气应急响应和季节性防控。');
+    }else{
+     lines.push('▪ 🌫️ 优良天数占比仅 <b style="color:#f03e3e">'+goodPct.toFixed(1)+'%</b>，污染天数过半，建议启动产业结构调整和能源结构优化。');
+    }
+
+    if(heavyDays>30){
+     lines.push('▪ 🚨 重污染天数 <b style="color:#f03e3e">'+heavyDays+'天</b>，需建立常态化应急响应机制、制定差异化错峰生产方案。');
+    }else if(heavyDays>10){
+     lines.push('▪ ⚡ 重污染天数 <b style="color:#ffc107">'+heavyDays+'天</b>，建议加强污染预警和临时管控措施。');
+    }
+
+    if(m.length){
+     const worst=m.reduce((a,b)=>a.avg_aqi>b.avg_aqi?a:b);
+     const best=m.reduce((a,b)=>a.avg_aqi<b.avg_aqi?a:b);
+     const worstMo=parseInt(worst.month);
+     let seasonAdvice='';
+     if(worstMo>=11||worstMo<=2) seasonAdvice='建议在秋冬季提前启动错峰生产和清洁取暖，减少燃煤排放。';
+     else if(worstMo>=3&&worstMo<=5) seasonAdvice='关注春季沙尘和扬尘影响，加强建筑工地和道路的降尘措施。';
+     else if(worstMo>=6&&worstMo<=8) seasonAdvice='夏季关注臭氧污染（光化学反应），加强VOCs排放管控和错峰喷涂作业。';
+     else seasonAdvice='关注秋季秸秆焚烧和扩散条件转差，提前部署防控。';
+     lines.push('▪ 📅 '+worst.month_name+'是全年污染最重月（AQI '+worst.avg_aqi.toFixed(1)+'），'+best.month_name+'最佳（AQI '+best.avg_aqi.toFixed(1)+'）。'+seasonAdvice);
+    }
+
+    if(yoy&&yoy.length>=3){
+     const recent=yoy.slice(-3);
+     const trend=recent[recent.length-1].avg_aqi-recent[0].avg_aqi;
+     if(trend<-5){
+      lines.push('▪ 📉 近3年AQI持续下降 <b style="color:#20c997">'+Math.abs(trend).toFixed(1)+'</b>，治理成效显著，建议延续并优化现有措施。');
+     }else if(trend<0){
+      lines.push('▪ 📊 近3年AQI缓慢下降 <b style="color:#4dabf7">'+Math.abs(trend).toFixed(1)+'</b>，改善势头平稳，需加大力度防止反弹。');
+     }else{
+      lines.push('▪ ⚠️ 近3年AQI上升 <b style="color:#f03e3e">'+trend.toFixed(1)+'</b>，空气质量出现恶化信号，需排查原因并调整治理策略。');
+     }
+    }
+
+    const cityEpisodes=episodes.filter(e=>e.city===city);
+    if(cityEpisodes.length>5){
+     lines.push('▪ 🔴 共发生 <b style="color:#f03e3e">'+cityEpisodes.length+'次</b>持续重污染事件，最大持续'+Math.max(...cityEpisodes.map(e=>e.duration))+'天，需评估应急响应的及时性和有效性。');
+    }
+
+   }else{
+    lines.push('<b style="color:#00e5d0;font-size:13px;">🌏 全国空气质量 · '+yr+'年 综合政策建议</b>');
+
+    if(yoy&&yoy.length>=3){
+     const recent=yoy.slice(-3);
+     const trend=recent[recent.length-1].avg_aqi-recent[0].avg_aqi;
+     if(trend<0)lines.push('▪ 📉 近3年全国AQI下降 <b style="color:#20c997">'+Math.abs(trend).toFixed(1)+'</b>，大气污染防治工作持续推进，成效总体向好。');
+     else lines.push('▪ ⚠️ 近3年全国AQI上升 <b style="color:#f03e3e">'+trend.toFixed(1)+'</b>，需警惕污染反弹风险，强化区域联防联控。');
+    }
+
+    if(pp.length){
+     const top=pp.reduce((a,b)=>a.count>b.count?a:b);
+     const polAction={'PM2.5':'推进北方清洁取暖全覆盖、严格工业超低排放、加快柴油货车淘汰','PM10':'全国扬尘专项整治、扩大城市绿地面积、三北防护林持续建设','O3':'建立全国VOCs排放清单、石化行业LDAR检测全覆盖、夏季臭氧污染联防','So2':'持续推进煤炭消费总量控制、钢铁焦化行业深度治理','No2':'加快国六排放标准实施、推广新能源物流车、优化铁路货运比例','Co':'加强机动车排放路检、推进钢铁烧结机头烟气治理'};
+     const action=polAction[top.pollutant]||'制定专项减排方案';
+     lines.push('▪ 🧪 全国首要污染物 <b style="color:#ffc107">'+top.pollutant+'</b>（'+top.pct.toFixed(0)+'%城市），建议：'+action+'。');
+    }
+
+    const heavy=ranking.filter(r=>r.avg_aqi>100);
+    if(heavy.length>0){
+     lines.push('▪ 🔴 <b style="color:#f03e3e">'+heavy.length+'个城市</b>年均AQI>100，重点区域：'+heavy.slice(0,3).map(r=>r.city).join('、')+'等，建议纳入重点督查范围。');
+    }else{
+     lines.push('▪ ✅ 所有监测城市年均AQI<100，全国空气质量整体达标态势良好。');
+    }
+
+    if(goodPct>80){
+     lines.push('▪ 🌿 全国优良天数占比 <b style="color:#20c997">'+goodPct.toFixed(1)+'%</b>，建议在巩固成果基础上推动从达标治理向健康导向升级。');
+    }else if(goodPct>65){
+     lines.push('▪ 🌤️ 全国优良天数占比 <b style="color:#4dabf7">'+goodPct.toFixed(1)+'%</b>，需重点关注秋冬季重污染削峰和夏季臭氧防控。');
+    }else{
+     lines.push('▪ 🌫️ 全国优良天数占比仅 <b style="color:#f03e3e">'+goodPct.toFixed(1)+'%</b>，亟需加大产业和能源结构调整力度。');
+    }
+
+    if(m.length){
+     const worst=m.reduce((a,b)=>a.avg_aqi>b.avg_aqi?a:b);
+     const best=m.reduce((a,b)=>a.avg_aqi<b.avg_aqi?a:b);
+     lines.push('▪ 📅 '+worst.month_name+'全国污染最重（AQI '+worst.avg_aqi.toFixed(1)+'），建议11月起启动北方地区冬季联防联控；'+best.month_name+'最佳（AQI '+best.avg_aqi.toFixed(1)+'）。');
+    }
+
+    if(yoy&&yoy.length>=5){
+     const first5=yoy.slice(0,5).reduce((s,y)=>s+y.avg_aqi,0)/5;
+     const last5=yoy.slice(-5).reduce((s,y)=>s+y.avg_aqi,0)/5;
+     const improvement=((first5-last5)/first5*100);
+     if(improvement>15){
+      lines.push('▪ 🏆 对比前后5年均值，AQI改善 <b style="color:#20c997">'+improvement.toFixed(1)+'%</b>，治理路径正确，建议形成可复制的中国方案向国际推广。');
+     }else if(improvement>5){
+      lines.push('▪ 📊 对比前后5年均值，AQI改善 <b style="color:#4dabf7">'+improvement.toFixed(1)+'%</b>，建议加快治理步伐，力争2030年全面达到国家二级标准。');
+     }else{
+      lines.push('▪ ⚠️ 对比前后5年均值，改善幅度仅 <b style="color:#ffc107">'+improvement.toFixed(1)+'%</b>，建议重新评估治理措施有效性，加大结构性改革力度。');
+     }
+    }
+
+    if(overview.best_city&&overview.worst_city){
+     const gap=overview.worst_city_aqi-overview.best_city_aqi;
+     lines.push('▪ 📌 '+yr+'年最佳：<b style="color:#20c997">'+overview.best_city+'</b>（AQI '+overview.best_city_aqi+'），最差：<b style="color:#f03e3e">'+overview.worst_city+'</b>（AQI '+overview.worst_city_aqi+'），差距'+gap.toFixed(0)+'倍，建议组织标杆城市经验推广。');
+    }
+   }
+   policyText.value=lines.join('<br>');
+  }
+
+
+  function initAllCharts(){
+   // Dispose any existing instances first
+   Object.keys(charts).forEach(k=>{try{charts[k].dispose();}catch(e){}});
+   // Initialize ECharts instances for all chart containers
+   const ids=['ch1','ch2','ch4','ch5','ch6','ch7','ch8','ch9','ch10','ch11','ch12','ch13','ch14','ch15','ch16','ch17'];
+   ids.forEach(id=>{
+    const dom=document.getElementById(id);
+    if(dom&&dom.offsetWidth>0){try{echarts.dispose(dom);}catch(e){} charts[id]=echarts.init(dom);}
+   });
+   // Pre-init heatmap zoom instances (parent v-show overlay hidden, offsetWidth=0, but CSS dims are set)
+   ['zoom-hm-ch7','zoom-hm-ch9'].forEach(id=>{
+    const dom=document.getElementById(id);
+    if(dom)charts[id]=echarts.init(dom);
+   });
+   // Run all chart functions on new instances
+   updateAllGlobalCharts();
+  }
+
+  function updateAllGlobalCharts(){
+   try{u1();}catch(e){console.error('ch1:',e);}
+   try{u2();}catch(e){console.error('ch2:',e);}
+   try{u4();}catch(e){console.error('ch4:',e);}
+   try{u5();}catch(e){console.error('ch5:',e);}
+   try{u6();}catch(e){console.error('ch6:',e);}
+   try{u7();}catch(e){console.error('ch7:',e);}
+   try{u8();}catch(e){console.error('ch8:',e);}
+   try{u9();}catch(e){console.error('ch9:',e);}
+   try{u10();}catch(e){console.error('ch10:',e);}
+   try{u11();}catch(e){console.error('ch11:',e);}
+   try{u12();}catch(e){console.error('ch12:',e);}
+   try{u13();}catch(e){console.error('ch13:',e);}
+   try{u14();}catch(e){console.error('ch14:',e);}
+   try{u15();}catch(e){console.error('ch15:',e);}
+   try{u16();}catch(e){console.error('ch16:',e);}
+   try{u17();}catch(e){console.error('ch17:',e);}
+   // Also refresh zoom chart when zoom overlay is open
+   refreshZoomChart();
+  }
+
+  // Re-render existing zoom instance without recreating it (avoids flicker)
+  function refreshZoomChart(){
+   if(!zoomVisible.value) return;
+   const chartId=zoomChartId.value;
+   const isHm = chartId==='ch7' || chartId==='ch9';
+   if(isHm){
+    const hmInst=charts['zoom-hm-'+chartId];
+    if(hmInst){
+     const saved=charts[chartId];
+     charts[chartId]=hmInst;
+     const fn=chartFns[chartId];
+     if(fn)try{fn(true);}catch(e){console.error('zoomRefresh hm:',e);}
+     charts[chartId]=saved;
+     hmInst.resize();
+    }
+    return;
+   }
+   if(!zoomInstance.value) return;
+   const saved=charts[chartId];
+   charts[chartId]=zoomInstance.value;
+   const fn=chartFns[chartId];
+   if(fn)try{fn();}catch(e){console.error('zoomRefresh '+chartId+':',e);}
+   charts[chartId]=saved;
+   zoomInstance.value.resize();
+  }
+  // Helper: show "no data" on a chart instance
+  function showNoData(c, msg){
+   msg=msg||'暂无数据';
+   c.setOption({
+    title:{text:msg,left:'center',top:'center',textStyle:{color:'#868e96',fontSize:14,fontWeight:'normal'}},
+    xAxis:{show:false},yAxis:{show:false},series:[]
+   },true);
+  }
+
+  // 1. Monthly AQI — color-coded by AQI level
+  function u1(){
+   const c=charts['ch1'];if(!c)return;
+   const yr=chYear('ch1');
+   const key='temporal/'+yr+'/'+(selectedCity.value||'');
+   const td=dataCache[key]||temporalData.value;
+   const m=(td&&td.monthly_trend)||[];
+   if(!m.length){c.clear();return;}
+   const aqiColor=v=>v<=50?'#4dabf7':v<=100?'#748ffc':v<=150?'#9775fa':v<=200?'#b197fc':'#e599f7';
+   c.setOption({
+    tooltip:{trigger:'axis'},grid:{top:8,right:12,bottom:18,left:38},
+    xAxis:{type:'category',data:m.map(x=>x.month_name),axisLabel:{color:'#adb5bd',fontSize:9},axisLine:{lineStyle:{color:'#2a3a4a'}}},
+    yAxis:{type:'value',name:'AQI',nameTextStyle:{fontSize:10,fontWeight:700,color:'#bbc4cc'},axisLabel:{color:'#bbc4cc',fontSize:10},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+    series:[{type:'line',data:m.map(x=>({value:x.avg_aqi,itemStyle:{color:aqiColor(x.avg_aqi)}})),smooth:true,symbol:'circle',symbolSize:6,lineStyle:{color:'#00e5d0',width:2.5},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(0,229,208,0.2)'},{offset:1,color:'rgba(0,229,208,0.01)'}]}}}],
+   },true);
+  }
+
+  // 2. Radar — gradient purple-blue, works for both national and city
+  function u2(){
+   const c=charts['ch2'];if(!c)return;
+   const yr=chYear('ch2');
+   const key='pollutants/'+yr+'/'+(selectedCity.value||'');
+   const pd=dataCache[key]||pollutantData.value;
+   const p=pd?.pollutant_values||pd?.pollutant_composition;
+   if(!p){c.clear();return;}
+   const getVal=k=>{const v=p[k];return typeof v==='object'?(v.avg||0):(v||0);};
+   c.setOption({
+    tooltip:{},radar:{center:['50%','52%'],radius:'60%',indicator:[{name:'PM2.5',max:150},{name:'PM10',max:200},{name:'SO2',max:100},{name:'NO2',max:100},{name:'CO',max:3},{name:'O3',max:200}],axisName:{color:'#bbc4cc',fontSize:10},splitArea:{areaStyle:{color:['rgba(77,171,247,0.02)','rgba(151,117,250,0.04)']}},splitLine:{lineStyle:{color:'#1a3a4a'}},axisLine:{lineStyle:{color:'#1a3a4a'}}},
+    series:[{type:'radar',data:[{value:[getVal('PM2.5'),getVal('PM10'),getVal('SO2'),getVal('NO2'),getVal('CO'),getVal('O3')],name:selectedCity.value||'全国均值',areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(77,171,247,0.3)'},{offset:1,color:'rgba(151,117,250,0.1)'}]}},lineStyle:{color:'#9775fa',width:2},itemStyle:{color:'#4dabf7'},symbol:'circle',symbolSize:4}],symbol:'circle'}],
+   },true);
+  }
+
+  // 4. Pollutant bars
+  function u4(){
+   const c=charts['ch4'];if(!c)return;
+   const yr=chYear('ch4');
+   const key='pollutants/'+yr+'/'+(selectedCity.value||'');
+   const pd=dataCache[key]||pollutantData.value;
+   const comp=pd?.pollutant_composition||pd?.pollutant_values;
+   if(!comp){c.clear();return;}
+   const pols=['PM2.5','PM10','So2','No2','Co','O3'];
+   const vals=pols.map(p=>typeof comp[p]==='object'?comp[p].avg:(comp[p]||0));
+   const colors=['#4dabf7','#748ffc','#9775fa','#b197fc','#e599f7','#00e5d0'];
+   c.setOption({
+    tooltip:{trigger:'axis'},grid:{top:6,right:30,bottom:18,left:42},
+    xAxis:{type:'value',axisLabel:{color:'#bbc4cc',fontSize:10},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+    yAxis:{type:'category',data:pols,axisLabel:{color:'#adb5bd',fontSize:9},axisLine:{lineStyle:{color:'#2a3a4a'}}},
+    series:[{type:'bar',data:vals.map((v,i)=>({value:v,itemStyle:{color:colors[i],borderRadius:[0,4,4,0]}})),barWidth:12,label:{show:true,position:'right',color:'#c0c8d0',fontSize:9}}],
+   },true);
+  }
+
+  // 5. Multi-year AQI trend (2013-2023) — always uses global data, no per-chart year
+  function u5(){
+   const c=charts['ch5'];if(!c)return;
+   const yoy=temporalData.value?.yoy_comparison;
+   if(!yoy||!yoy.length){c.clear();return;}
+   c.setOption({
+    tooltip:{trigger:'axis'},grid:{top:8,right:12,bottom:20,left:42},
+    xAxis:{type:'category',data:yoy.map(y=>y.year),axisLabel:{color:'#bbc4cc',fontSize:10},axisLine:{lineStyle:{color:'#2a3a4a'}}},
+    yAxis:{type:'value',name:'AQI',nameTextStyle:{fontSize:10,fontWeight:700,color:'#bbc4cc'},axisLabel:{color:'#bbc4cc',fontSize:10},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+    series:[{type:'bar',data:yoy.map(y=>({value:y.avg_aqi,itemStyle:{color:y.pct_change<0?'#4dabf7':'#e599f7',borderRadius:[3,3,0,0]}})),barWidth:'55%'},
+            {type:'line',data:yoy.map(y=>y.avg_aqi),smooth:true,symbol:'circle',symbolSize:5,lineStyle:{color:'#00e5d0',width:1.8},itemStyle:{color:'#00e5d0'}}],
+   },true);
+  }
+
+  // 6. Seasonal
+  function u6(){
+   const c=charts['ch6'];if(!c)return;
+   const yr=chYear('ch6');
+   const key='temporal/'+yr+'/'+(selectedCity.value||'');
+   const td=dataCache[key]||temporalData.value;
+   const s=td?.seasonal;
+   if(!s){c.clear();return;}
+   const seasons=['春','夏','秋','冬'];
+   const cc=['#4dabf7','#748ffc','#9775fa','#e599f7'];
+   c.setOption({
+    tooltip:{trigger:'axis'},grid:{top:8,right:12,bottom:18,left:42},
+    xAxis:{type:'category',data:seasons,axisLabel:{color:'#bbc4cc',fontSize:10},axisLine:{lineStyle:{color:'#2a3a4a'}}},
+    yAxis:{type:'value',name:'AQI',nameTextStyle:{fontSize:10,fontWeight:700,color:'#bbc4cc'},axisLabel:{color:'#bbc4cc',fontSize:10},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+    series:[{type:'bar',data:seasons.map((ss,i)=>({value:s[ss]?.avg_aqi||0,itemStyle:{color:cc[i],borderRadius:[4,4,0,0]}})),barWidth:'50%',label:{show:true,position:'top',color:'#c0c8d0',fontSize:9}}],
+   },true);
+  }
+
+  function u7(showVM){
+   const c=charts['ch7'];if(!c)return;
+   const yr=chYear('ch7');
+   const key='pollutants/'+yr+'/'+(selectedCity.value||'');
+   const pd=dataCache[key]||pollutantData.value;
+   const cm=pd?.correlation_matrix;
+   if(!cm||!cm.matrix||!cm.matrix.length){showNoData(c);return;}
+   const labels=cm.labels||['PM2.5','PM10','SO2','NO2','CO','O3','AQI'];
+   const hmData=[];
+   for(let i=0;i<cm.matrix.length;i++){
+    const row=cm.matrix[i];
+    for(let j=0;j<row.length;j++){
+     const v=parseFloat(row[j].toFixed(3));
+     hmData.push([j,i,isNaN(v)?null:v]);
+    }
+   }
+   const zoom=!!showVM;
+   // Soft diverging palette: blue→gray→coral (dark-theme friendly)
+   const colors=['#1a4971','#3a7abd','#4a5568','#c0623a','#a04030'];
+   c.setOption({
+    tooltip:{trigger:'item',formatter:p=>{
+     const v=p.value[2];
+     if(v==null)return labels[p.value[0]]+' × '+labels[p.value[1]]+'<br/>数据不足';
+     return labels[p.value[0]]+' × '+labels[p.value[1]]+'<br/>r = '+v.toFixed(3);
+    }},
+    grid:zoom?{top:30,right:80,bottom:50,left:70}:{top:20,right:8,bottom:8,left:8},
+    xAxis:{type:'category',data:labels,axisLabel:{color:'#adb5bd',fontSize:zoom?12:8,rotate:zoom?0:30},position:zoom?'top':'top',axisLine:{lineStyle:{color:'#2a3a4a'}},splitArea:{show:true,areaStyle:{color:['rgba(0,0,0,0)','rgba(0,0,0,0.05)']}}},
+    yAxis:{type:'category',data:labels,axisLabel:{color:'#adb5bd',fontSize:zoom?12:8},axisLine:{lineStyle:{color:'#2a3a4a'}},splitArea:{show:true,areaStyle:{color:['rgba(0,0,0,0)','rgba(0,0,0,0.05)']}}},
+    visualMap:{min:-1,max:1,seriesIndex:0,calculable:false,show:zoom,orient:zoom?'vertical':'horizontal',right:zoom?5:'auto',bottom:zoom?'auto':0,inRange:{color:colors}},
+    series:[{type:'heatmap',data:hmData,label:{show:true,color:'#e9ecef',fontSize:zoom?11:8,textShadowColor:'rgba(0,0,0,0.7)',textShadowBlur:2},emphasis:{itemStyle:{shadowBlur:8,shadowColor:'rgba(0,0,0,0.6)',borderColor:'#ffe066',borderWidth:1}}}],
+   },true);
+  }
+// 8. City ranking bar Top15
+  function u8(){
+   const c=charts['ch8'];if(!c)return;
+   const yr=chYear('ch8');
+   const key='spatial/'+yr+'/';
+   const sd=dataCache[key]||spatialData.value;
+   const ranking=sd?.city_ranking||[];
+   if(!ranking.length){c.clear();return;}
+   const top15=ranking.filter(r=>r.rank<=15).reverse();
+   c.setOption({
+    tooltip:{trigger:'axis'},grid:{top:6,right:10,bottom:8,left:50},
+    xAxis:{type:'value',axisLabel:{color:'#bbc4cc',fontSize:10},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+    yAxis:{type:'category',data:top15.map(r=>r.city),axisLabel:{color:'#adb5bd',fontSize:9},axisLine:{lineStyle:{color:'#2a3a4a'}}},
+    series:[{type:'bar',data:top15.map(r=>({value:r.avg_aqi,itemStyle:{color:r.avg_aqi<=50?'#4dabf7':r.avg_aqi<=100?'#748ffc':r.avg_aqi<=150?'#9775fa':'#e599f7',borderRadius:[0,4,4,0]}})),barWidth:10}],
+   },true);
+  }
+  function u9(showVM){
+   const c=charts['ch9'];if(!c)return;
+   const yr=chYear('ch9');
+   const key='quality/'+yr+'/'+(selectedCity.value||'');
+   const qd=dataCache[key]||qualityData.value;
+   const tm=qd?.level_transition_matrix;
+   if(!tm||!tm.matrix||!tm.matrix.length){showNoData(c);return;}
+   const labels=tm.labels||['优','良','轻度污染','中度污染','重度污染','严重污染'];
+   const hmData=[];
+   const rowTotals=[];
+   for(let i=0;i<tm.matrix.length;i++){
+    const row=tm.matrix[i];let rt=0;
+    for(let j=0;j<row.length;j++)rt+=row[j];
+    rowTotals.push(rt);
+   }
+   // Use row-normalized % for color (raw counts skewed by diagonal)
+   for(let i=0;i<tm.matrix.length;i++){
+    const row=tm.matrix[i];
+    for(let j=0;j<row.length;j++){
+     if(row[j]>0){
+      const pct=rowTotals[i]?parseFloat((row[j]/rowTotals[i]*100).toFixed(1)):0;
+      hmData.push({value:[j,i,pct],count:row[j],pct:pct});
+     }
+   }}
+   if(!hmData.length){showNoData(c,selectedCity.value?'该地区暂无转移数据':'暂无转移数据');return;}
+   const zoom=!!showVM;
+   const yLabels=labels.map((l,i)=>l+' ('+rowTotals[i]+')');
+   c.setOption({
+    tooltip:{trigger:'item',formatter:p=>{
+     const d=p.data;const fi=d.value[1],ti=d.value[0];
+     return labels[fi]+' → '+labels[ti]+'<br/>次数: '+d.count+'<br/>占比: '+d.pct+'%';
+    }},
+    grid:zoom?{top:35,right:80,bottom:50,left:85}:{top:18,right:6,bottom:6,left:6},
+    xAxis:{type:'category',data:labels,name:zoom?'转移至':'',nameTextStyle:{color:'#adb5bd',fontSize:11},axisLabel:{color:'#adb5bd',fontSize:zoom?12:7,rotate:zoom?0:30},position:'top',axisLine:{lineStyle:{color:'#2a3a4a'}},splitArea:{show:true,areaStyle:{color:['rgba(0,0,0,0)','rgba(0,0,0,0.05)']}}},
+    yAxis:{type:'category',data:yLabels,name:zoom?'转移自':'',nameTextStyle:{color:'#adb5bd',fontSize:11},axisLabel:{color:'#adb5bd',fontSize:zoom?12:7},axisLine:{lineStyle:{color:'#2a3a4a'}},splitArea:{show:true,areaStyle:{color:['rgba(0,0,0,0)','rgba(0,0,0,0.05)']}}},
+    visualMap:{min:0,max:100,seriesIndex:0,calculable:false,show:zoom,orient:zoom?'vertical':'horizontal',right:zoom?5:'auto',bottom:zoom?'auto':0,inRange:{color:['#0a1e35','#1a3d5c','#2a5f8a','#3d85b3','#5ba3d9','#90cdf4','#c6e8ff']}},
+    series:[{type:'heatmap',data:hmData,label:{show:true,color:'#fff',fontSize:zoom?12:8,formatter:p=>p.data.pct+'%',textShadowColor:'rgba(0,0,0,0.5)',textShadowBlur:2},emphasis:{itemStyle:{shadowBlur:8,shadowColor:'rgba(0,0,0,0.6)',borderColor:'#ffe066',borderWidth:1}}}],
+   },true);
+  }
+// 10. Most improved cities (compare first year to selected year)
+  function u10(){
+   const c=charts['ch10'];if(!c)return;
+   const yr=chYear('ch10');
+   const key='spatial/'+yr;
+   const sd=dataCache[key]||spatialData.value;
+   const ranking=sd?.city_ranking||[];
+   if(!ranking.length){c.clear();return;}
+   const allYrs=[...years.value].sort((a,b)=>a-b);
+   const firstYr=allYrs[0];
+   const firstKey='spatial/'+firstYr;
+   let firstSd=dataCache[firstKey];
+   if(!firstSd&&firstYr!==yr){
+    fetchJSON('/api/spatial?year='+firstYr).then(d=>{
+     dataCache[firstKey]=d;
+     u10();
+    }).catch(()=>{});
+    const top20=ranking.slice(0,20).reverse();
+    c.setOption({
+     tooltip:{trigger:'axis'},
+     grid:{top:6,right:10,bottom:8,left:65},
+     xAxis:{type:'value',axisLabel:{color:'#bbc4cc',fontSize:10},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+     yAxis:{type:'category',data:top20.map(r=>r.city),axisLabel:{color:'#adb5bd',fontSize:9},inverse:true},
+     series:[{type:'bar',data:top20.map(r=>({value:r.avg_aqi,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:r.avg_aqi<=50?'#00e5d0':r.avg_aqi<=100?'#339af0':r.avg_aqi<=150?'#fcc419':'#ff6b6b'},{offset:1,color:r.avg_aqi<=50?'#20c997':r.avg_aqi<=100?'#4dabf7':r.avg_aqi<=150?'#ff922b':'#f03e3e'}]),borderRadius:[0,4,4,0]}})),barWidth:12}],
+    },true);
+    return;
+   }
+   const firstRank=firstSd.city_ranking;
+   const improveData=ranking.map(r=>{
+    const prev=firstRank.find(f=>f.city===r.city);
+    const delta=prev?prev.avg_aqi-r.avg_aqi:0;
+    return {city:r.city,improve:Math.round(delta*10)/10,aqi:r.avg_aqi};
+   }).sort((a,b)=>b.improve-a.improve).slice(0,20).reverse();
+   c.setOption({
+    tooltip:{trigger:'axis',formatter:p=>p[0].name+'<br/>改善: '+p[0].value+' 分'},
+    grid:{top:6,right:10,bottom:8,left:65},
+    xAxis:{type:'value',axisLabel:{color:'#bbc4cc',fontSize:10},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+    yAxis:{type:'category',data:improveData.map(r=>r.city),axisLabel:{color:'#adb5bd',fontSize:9},inverse:true},
+    series:[{
+     type:'bar',data:improveData.map(r=>({
+      value:r.improve,
+      itemStyle:{color:r.improve>=0?new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#00e5d0'},{offset:1,color:'#20c997'}]):new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#ff6b6b'},{offset:1,color:'#f03e3e'}]),borderRadius:[0,4,4,0]}
+     })),barWidth:12,label:{show:true,position:'right',fontSize:9,color:'#e9ecef',formatter:p=>p.value+'分'}
+    }],
+   },true);
+  }
+
+  // 11. Multi-pollutant year-over-year trend (stacked area)
+  function u11(){
+   const c=charts['ch11'];if(!c)return;
+   const yr=chYear('ch11');
+   const key='pollutants/'+yr+'/'+(selectedCity.value||'');
+   const pd=dataCache[key]||pollutantData.value;
+   const trends=pd?.pollutant_trends;
+   if(!trends){c.clear();return;}
+   const pollKeys=Object.keys(trends);
+   if(!pollKeys.length||!trends[pollKeys[0]]||!trends[pollKeys[0]].length){c.clear();return;}
+   const months=trends[pollKeys[0]].map(m=>m.month_name);
+   const pollLabels={'PM2.5':'PM2.5','PM10':'PM10','So2':'SO₂','No2':'NO₂','Co':'CO','O3':'O₃'};
+   const colors={'PM2.5':'#4dabf7','PM10':'#748ffc','So2':'#9775fa','No2':'#fcc419','Co':'#20c997','O3':'#f03e3e'};
+   const series=pollKeys.map(n=>({
+    name:pollLabels[n]||n,type:'line',stack:'total',
+    smooth:true,lineStyle:{width:0},showSymbol:false,
+    areaStyle:{opacity:0.7,color:colors[n]||'#adb5bd'},
+    data:trends[n].map(m=>m.avg)
+   }));
+   c.setOption({
+    tooltip:{trigger:'axis'},
+    legend:{data:pollKeys.map(n=>pollLabels[n]||n),textStyle:{color:'#adb5bd',fontSize:8},top:0,itemWidth:12,itemHeight:8},
+    grid:{top:22,right:8,bottom:8,left:32},
+    xAxis:{type:'category',data:months,axisLabel:{color:'#adb5bd',fontSize:8}},
+    yAxis:{type:'value',axisLabel:{color:'#adb5bd',fontSize:8},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+    series:series,
+   },true);
+  }
+
+  // 12. Ten-year AQI trend — 2013-2023
+  function u12(){
+   const c=charts['ch12'];if(!c)return;
+   const td=temporalData.value;
+   const yoy=td?.yoy_comparison;
+   if(!yoy||!yoy.length){c.clear();return;}
+   const yrs=yoy.map(d=>d.year);
+   const aqi=yoy.map(d=>d.avg_aqi);
+   const changes=yoy.map(d=>d.pct_change||0);
+   c.setOption({
+    tooltip:{trigger:'axis',formatter:p=>{
+     const d=yoy[p[0].dataIndex];
+     return d.year+'年<br/>AQI: '+d.avg_aqi.toFixed(1)+'<br/>同比: '+(d.pct_change>=0?'+':'')+d.pct_change.toFixed(1)+'%';
+    }},
+    grid:{top:18,right:10,bottom:8,left:36},
+    xAxis:{type:'category',data:yrs,axisLabel:{color:'#bbc4cc',fontSize:10}},
+    yAxis:[
+     {type:'value',axisLabel:{color:'#bbc4cc',fontSize:10},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+     {type:'value',axisLabel:{color:'#868e96',fontSize:9},splitLine:{show:false}},
+    ],
+    series:[
+     {name:'年均AQI',type:'line',data:aqi,smooth:true,lineStyle:{color:'#00e5d0',width:2},itemStyle:{color:'#00e5d0'},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(0,229,208,0.25)'},{offset:1,color:'rgba(0,229,208,0.02)'}])},symbol:'circle',symbolSize:4},
+     {name:'同比变化%',type:'bar',yAxisIndex:1,data:changes.map(v=>({value:v,itemStyle:{color:v>=0?'#f03e3e':'#20c997'}})),barWidth:10},
+    ],
+   },true);
+  }
+
+  // 13. Nightingale rose - AQI level distribution (tech-cyber color palette)
+  function u13(){
+   const c=charts['ch13'];if(!c)return;
+   const yr=chYear('ch13');
+   const key='quality/'+yr+'/'+(selectedCity.value||'');
+   const qd=dataCache[key]||qualityData.value;
+   const dist=qd?.level_distribution;
+   if(!dist){c.clear();return;}
+   const levels=['优','良','轻度污染','中度污染','重度污染','严重污染'];
+   const techColors=['#00e5d0','#339af0','#fcc419','#ff922b','#ff6b6b','#f03e3e'];
+   const data=levels.map((l,i)=>({name:l,value:dist[l]?.count||0,itemStyle:{color:techColors[i],shadowBlur:2,shadowColor:'rgba(0,0,0,0.25)'}})).filter(d=>d.value>0);
+   const total=qd.total_days||1;
+   c.setOption({
+    tooltip:{formatter:p=>p.name+': '+p.value+' 天 ('+((p.value/total)*100).toFixed(1)+'%)'},
+    series:[{
+     type:'pie',radius:['18%','75%'],center:['50%','55%'],
+     roseType:'area',itemStyle:{borderRadius:4,borderColor:'rgba(2,8,16,0.6)',borderWidth:1},
+     label:{color:'#ced4da',fontSize:9,formatter:'{b}\n{d}%'},
+     labelLine:{lineStyle:{color:'rgba(0,229,208,0.25)'}},
+     data:data,
+    }],
+   },true);
+  }
+
+  // 14. K-line - monthly AQI candlestick
+  function u14(){
+   const c=charts['ch14'];if(!c)return;
+   const yr=chYear('ch14');
+   const key='temporal/'+yr+'/'+(selectedCity.value||'');
+   const td=dataCache[key]||temporalData.value;
+   const monthly=td?.monthly_trend;
+   if(!monthly||!monthly.length){c.clear();return;}
+   const data=monthly.map((m,i)=>{const open=i>0?monthly[i-1].avg_aqi:m.avg_aqi;return[open,m.avg_aqi,m.min_aqi||m.avg_aqi,m.max_aqi||m.avg_aqi];});
+   const months=monthly.map(m=>m.month_name||m.month+'月');
+   c.setOption({
+    tooltip:{trigger:'axis',formatter:p=>{
+     const d=p[0].data[1];return p[0].axisValue+'<br/>平均AQI:'+d;
+    }},
+    grid:{top:6,right:10,bottom:8,left:36},
+    xAxis:{type:'category',data:months,axisLabel:{color:'#bbc4cc',fontSize:10}},
+    yAxis:{type:'value',axisLabel:{color:'#bbc4cc',fontSize:10},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+    series:[{
+     type:'candlestick',data:data,
+     itemStyle:{color:'#20c997',color0:'#f03e3e',borderColor:'#20c997',borderColor0:'#f03e3e'},
+     markLine:{silent:true,data:[{type:'average',label:{fontSize:9}}],lineStyle:{color:'#ffc107'}},
+    }],
+   },true);
+  }
+
+  // 15. Range line - AQI min/max range
+  function u15(){
+   const c=charts['ch15'];if(!c)return;
+   const yr=chYear('ch15');
+   const key='temporal/'+yr+'/'+(selectedCity.value||'');
+   const td=dataCache[key]||temporalData.value;
+   const monthly=td?.monthly_trend;
+   if(!monthly||!monthly.length){c.clear();return;}
+   const months=monthly.map(m=>m.month_name||m.month+'月');
+   const avgData=monthly.map(m=>m.avg_aqi);
+   const minData=monthly.map(m=>m.min_aqi||m.avg_aqi);
+   const maxData=monthly.map(m=>m.max_aqi||m.avg_aqi);
+   c.setOption({
+    tooltip:{trigger:'axis'},
+    legend:{data:['平均AQI','最低AQI','最高AQI'],textStyle:{color:'#e9ecef',fontSize:10},top:0,itemWidth:14,itemHeight:10},
+    grid:{top:18,right:8,bottom:8,left:36},
+    xAxis:{type:'category',data:months,axisLabel:{color:'#bbc4cc',fontSize:10},boundaryGap:true},
+    yAxis:{type:'value',axisLabel:{color:'#bbc4cc',fontSize:10},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+    series:[{
+     name:'AQI范围',type:'line',data:minData,stack:'band',
+     lineStyle:{opacity:0},showSymbol:false,
+     areaStyle:{opacity:0},
+    },{
+     name:'范围',type:'line',data:maxData.map((v,i)=>Math.max(0,(v-minData[i]).toFixed(1))),stack:'band',
+     lineStyle:{opacity:0},showSymbol:false,
+     areaStyle:{color:'rgba(77,171,247,0.25)'},
+    },{
+     name:'最低AQI',type:'line',data:minData,smooth:true,lineStyle:{width:1,color:'#748ffc',type:'dashed'},symbol:'none',
+    },{
+     name:'最高AQI',type:'line',data:maxData,smooth:true,lineStyle:{width:1,color:'#f03e3e',type:'dashed'},symbol:'none',
+    },{
+     name:'平均AQI',type:'line',data:avgData,smooth:true,lineStyle:{width:1.5,color:'#4dabf7'},symbol:'circle',symbolSize:4,
+     itemStyle:{color:'#4dabf7'},
+    }],
+   },true);
+  }
+
+  // 16. Sankey - quality level transition (auto-layout, no manual positions)
+  function u16(){
+   const c=charts['ch16'];if(!c)return;
+   const yr=chYear('ch16');
+   const key='quality/'+yr+'/'+(selectedCity.value||'');
+   const qd=dataCache[key]||qualityData.value;
+   const tm=qd?.level_transition_matrix;
+   if(!tm||!tm.matrix||!tm.matrix.length){showNoData(c);return;}
+   const labels=tm.labels||['优','良','轻度污染','中度污染','重度污染','严重污染'];
+   const nodes=[];
+   labels.forEach(l=>{nodes.push({name:'去年'+l});nodes.push({name:'今年'+l});});
+   const links=[];
+   for(let i=0;i<tm.matrix.length;i++){
+    for(let j=0;j<tm.matrix[i].length;j++){
+     if(tm.matrix[i][j]>0)links.push({source:'去年'+labels[i],target:'今年'+labels[j],value:tm.matrix[i][j]});
+    }
+   }
+   if(!links.length){showNoData(c,selectedCity.value?'该地区暂无转移数据':'暂无转移数据');return;}
+   // Build depth info so EChars auto-layout separates 去年 (left) from 今年 (right)
+   const sankeyNodes=nodes.map(n=>({name:n.name,depth:n.name.startsWith('去年')?0:1}));
+   c.setOption({
+    tooltip:{formatter:p=>p.source+' → '+p.target+': '+p.value+' 次'},
+    series:[{
+     type:'sankey',emphasis:{focus:'adjacency'},
+     nodeAlign:'left',nodeWidth:12,nodeGap:8,
+     lineStyle:{color:'gradient',opacity:0.3},
+     label:{color:'#e9ecef',fontSize:9},
+     data:sankeyNodes,links:links,
+    }],
+   },true);
+  }// 17. Sunburst — Year > Season > Month hierarchy with AQI-based coloring
+  // 17. Sunburst — Year > Season > Month hierarchy with tech-glow AQI coloring
+  function u17(){
+   const c=charts['ch17'];if(!c)return;
+   const yr=chYear('ch17');
+   const key='temporal/'+yr+'/'+(selectedCity.value||'');
+   const td=dataCache[key]||temporalData.value;
+   const seasonal=td?.seasonal;
+   const monthly=td?.monthly_trend;
+   if(!seasonal){c.clear();return;}
+   const seasonMonths={春:['3月','4月','5月'],夏:['6月','7月','8月'],秋:['9月','10月','11月'],冬:['12月','1月','2月']};
+   // Tech-glow gradient: cyan(good) → blue → amber → orange → red(bad)
+   function aqiColor(v){
+    if(v<=50)return '#00e5d0';
+    if(v<=100)return '#339af0';
+    if(v<=150)return '#fcc419';
+    if(v<=200)return '#ff922b';
+    return '#f03e3e';
+   }
+   const monthAQI={};
+   if(monthly){monthly.forEach(m=>{monthAQI[m.month_name]=m.avg_aqi;});}
+   const children=[];
+   for(const [s,months] of Object.entries(seasonMonths)){
+    const sAQI=seasonal[s]?Math.round(seasonal[s].avg_aqi):0;
+    const monthChildren=months.map(mn=>({
+     name:mn,value:monthAQI[mn]?Math.round(monthAQI[mn]):0,
+     itemStyle:{color:aqiColor(monthAQI[mn]||sAQI),shadowBlur:4,shadowColor:aqiColor(monthAQI[mn]||sAQI)}
+    })).filter(m=>m.value>0);
+    children.push({
+     name:s,itemStyle:{color:aqiColor(sAQI),shadowBlur:6,shadowColor:aqiColor(sAQI)},
+     children:monthChildren.length?monthChildren:[{name:s,value:sAQI,itemStyle:{color:aqiColor(sAQI)}}]
+    });
+   }
+   const data=[{name:yr+'年',itemStyle:{color:'#00e5d0',shadowBlur:10,shadowColor:'rgba(0,229,208,0.6)'},children:children}];
+   c.setOption({
+    tooltip:{formatter:p=>{const v=p.value||'';return p.name+': '+(v?'AQI '+v:'')+((p.treePathInfo&&p.treePathInfo.length>1)?' ('+p.treePathInfo.map(x=>x.name).join(' > ')+')':'');}},
+    series:[{
+     type:'sunburst',radius:['0%','90%'],data:data,
+     label:{color:'#e9ecef',fontSize:8,rotate:'radial',minAngle:10},
+     sort:undefined,emphasis:{focus:'ancestor',itemStyle:{shadowBlur:15,shadowColor:'rgba(0,229,208,0.5)'}},
+     levels:[
+      {},{r0:'10%',r:'55%',label:{fontSize:10,fontWeight:'bold'},itemStyle:{borderWidth:2,borderColor:'rgba(2,8,16,0.5)'}},
+      {r0:'55%',r:'75%',label:{fontSize:8},itemStyle:{borderWidth:1.5,borderColor:'rgba(2,8,16,0.4)'}},
+      {r0:'75%',r:'92%',label:{fontSize:9},itemStyle:{borderWidth:1,borderColor:'rgba(2,8,16,0.3)'}},
+     ],
+    }],
+   },true);
+  }
+
+  // ===== ZOOM =====
+
+  function zoomChart(id,title){
+   zoomChartId.value=id;
+   zoomTitle.value=title;
+   const isHm = id==='ch7' || id==='ch9';
+   zoomVisible.value=true;
+   if(isHm){
+    nextTick(()=>{
+     const hmDom=document.getElementById('zoom-hm-'+id);
+     if(hmDom){
+      hmDom.style.display='';
+      const hmInst=charts['zoom-hm-'+id];
+      if(hmInst){
+       const saved=charts[id];
+       charts[id]=hmInst;
+       const fn=chartFns[id];
+       if(fn)try{fn(true);}catch(e){console.error('zoom hm render:',e);}
+       charts[id]=saved;
+       setTimeout(()=>hmInst.resize(),100);
+      }
+     }
+    });
+   }
+  }
+
+  function closeZoom(){
+   const id=zoomChartId.value;
+   const isHm = id==='ch7' || id==='ch9';
+   if(isHm){
+    const hmDom=document.getElementById('zoom-hm-'+id);
+    if(hmDom) hmDom.style.display='none';
+   }else{
+    try{var zd=document.getElementById('zoom-'+id);if(zd)echarts.dispose(zd);}catch(e){}
+   }
+   if(zoomInstance.value){zoomInstance.value.dispose();zoomInstance.value=null;}
+   zoomVisible.value=false;
+  }  function togglePageFullscreen(){
+   if(!document.fullscreenElement){
+    document.documentElement.requestFullscreen().catch(()=>{});
+   }else{
+    document.exitFullscreen();
+   }
+  }
+
+  async function onZoomYear(year){
+   Object.keys(chartYearOverrides).forEach(k=>{chartYearOverrides[k]=undefined;});
+   selectedYear.value=year;
+   // Watcher triggers reloadData -> updateAllGlobalCharts -> refreshZoomChart
+  }
+
+  function scaleFonts(obj,factor){
+   if(!obj||typeof obj!=='object')return;
+   const numKeys=['fontSize','left','right','top','bottom','barWidth','symbolSize','barGap','barCategoryGap','nameGap','gap','width','itemWidth','itemHeight','itemGap'];
+   const subKeys=['textStyle','axisLabel','label','legend','nameTextStyle','title'];
+   for(const key of Object.keys(obj)){
+    if(numKeys.includes(key)&&typeof obj[key]==='number')obj[key]=Math.round(obj[key]*factor);
+    else if(subKeys.includes(key)&&typeof obj[key]==='object')scaleFonts(obj[key],factor);
+   }
+  }
+
+  function renderZoomChart(retryCount){
+   retryCount=retryCount||0;
+   const chartId=zoomChartId.value;
+   const isHm = chartId==='ch7' || chartId==='ch9';
+   if(isHm) return; // Heatmaps use pre-created instances, skip dynamic creation
+   nextTick(()=>{
+    setTimeout(()=>{
+    const dom=document.getElementById('zoom-'+chartId);
+    if(!dom||dom.offsetWidth===0){
+     if(retryCount<3){renderZoomChart(retryCount+1);}
+     return;
+    }
+    try{echarts.dispose(dom);}catch(e){}
+    if(zoomInstance.value){zoomInstance.value.dispose();zoomInstance.value=null;}
+    zoomInstance.value=echarts.init(dom);
+    const saved=charts[chartId];
+    charts[chartId]=zoomInstance.value;
+    const fn=chartFns[chartId];
+    if(fn)try{fn(true);}catch(e){console.error('zoom render:',e);}
+    charts[chartId]=saved;
+    try{
+     const opt=zoomInstance.value.getOption();
+     scaleFonts(opt,1.35);
+     if(opt.legend){
+      const ls=Array.isArray(opt.legend)?opt.legend:[opt.legend];
+      ls.forEach(l=>{l.show=true;l.top=(l.top||0)>20?l.top:10;if(l.textStyle)l.textStyle.fontSize=Math.round((l.textStyle.fontSize||12)*1.3);});
+     }
+     if(opt.grid){
+      const gs=Array.isArray(opt.grid)?opt.grid:[opt.grid];
+      gs.forEach(g=>{g.top=Math.max(g.top||30,40);g.bottom=Math.max(g.bottom||15,35);g.left=Math.max(g.left||40,50);g.right=Math.max(g.right||20,60);});
+     }
+     if(opt.visualMap){
+      const vs=Array.isArray(opt.visualMap)?opt.visualMap:[opt.visualMap];
+      vs.forEach(v=>{v.show=true;if(v.textStyle){v.textStyle.fontSize=Math.round((v.textStyle.fontSize||10)*1.5);v.textStyle.color='#e9ecef';}});
+     }
+     ['xAxis','yAxis'].forEach(k=>{
+      const ax=Array.isArray(opt[k])?opt[k]:[opt[k]];
+      ax.forEach(a=>{if(a&&a.axisLabel){a.axisLabel.fontSize=Math.max(12,Math.round((a.axisLabel.fontSize||10)*1.35));a.axisLabel.color='#e9ecef';}});
+     });
+     // Ensure tooltip is always enabled in zoom view
+     if(!opt.tooltip||opt.tooltip.show===false){opt.tooltip={trigger:'axis',show:true};}else{opt.tooltip.show=true;}
+     zoomInstance.value.setOption(opt,false);
+    }catch(e){console.error('zoom scale:',e);}
+    zoomInstance.value.resize();
+   },200);
+   });
+  }
+  function onCityChange(newVal){
+   // Kept for backward compatibility with zoom overlay selectors
+   if(newVal!==undefined&&newVal!==null) selectedCity.value=newVal;
+  }
+
+  function selectCity(city){
+   selectedCity.value=city;
+   // Watcher on selectedCity triggers reload
+  }
+
+  // ===== RESIZE =====
+  function resizeHandler(){
+   Object.values(charts).forEach(c=>{try{c.resize();}catch(e){}});
+   if(zoomInstance.value)try{zoomInstance.value.resize();}catch(e){}
+   const container=document.getElementById('globe-container');
+   if(typeof renderer!=='undefined'&&renderer&&container){
+    const w2=container.clientWidth,h2=container.clientHeight;
+    renderer.setSize(w2,h2);
+    if(typeof camera!=='undefined'&&camera){camera.aspect=w2/h2;camera.updateProjectionMatrix();}
+   }
+  }
+
+  // ===== CHART FUNCTION MAP =====
+  const chartFns={
+   ch1:u1,ch2:u2,ch4:u4,ch5:u5,ch6:u6,ch7:u7,ch8:u8,ch9:u9,
+   ch10:u10,ch11:u11,ch12:u12,ch13:u13,ch14:u14,ch15:u15,ch16:u16,ch17:u17,
+  };
+
+  // ===== DATA LOADING =====
+  async function loadAllData(){
+   console.log('[Dashboard] loadAllData starting...');
+   loading.value=true;
+   // Safety timeout: force-clear loading state after 8s even if something hangs
+   const safetyTimer=setTimeout(()=>{if(loading.value){loading.value=false;console.warn('[Dashboard] loadAllData safety timeout triggered');}},8000);
+   try{
+    console.log('[Dashboard] fetching initial data...');
+    const [yrData,yearsList,citiesList]=await Promise.all([
+     fetchJSON('/api/temporal?year='+selectedYear.value+'&city='+(selectedCity.value||'')),
+     fetchJSON('/api/years'),
+     fetchJSON('/api/cities'),
+    ]);
+    allYears.value=Array.isArray(yearsList)?yearsList:(yearsList.years||[]);
+    years.value=[...allYears.value];
+    const citiesFull=Array.isArray(citiesList)?citiesList:(citiesList.cities||[]);
+    cities.value=citiesFull.map(c=>typeof c==='string'?c:c.city);
+    // Populate city -> available years map
+    citiesFull.forEach(c=>{if(typeof c!=='string'&&c.years){cityDataMap[c.city]=c.years;}});
+    const [spat,poll,qual,adv,ov]=await Promise.all([
+     fetchJSON('/api/spatial?year='+selectedYear.value),
+     fetchJSON('/api/pollutants?year='+selectedYear.value+'&city='+(selectedCity.value||'')),
+     fetchJSON('/api/quality?year='+selectedYear.value+'&city='+(selectedCity.value||'')),
+     fetchJSON('/api/advanced?year='+selectedYear.value),
+     fetchJSON('/api/overview?year='+selectedYear.value),
+    ]);
+    dataCache['temporal/'+selectedYear.value+'/'+(selectedCity.value||'')]=yrData;
+    dataCache['spatial/'+selectedYear.value]=spat;
+    dataCache['pollutants/'+selectedYear.value+'/'+(selectedCity.value||'')]=poll;
+    dataCache['quality/'+selectedYear.value+'/'+(selectedCity.value||'')]=qual;
+    dataCache['advanced/'+selectedYear.value]=adv;
+    temporalData.value=yrData;
+    spatialData.value=spat;
+    pollutantData.value=poll;
+    qualityData.value=qual;
+    advancedData.value=adv;
+    Object.assign(overview, ov);
+    const rankingAll=spat.city_ranking||[];
+    const totalCnt=rankingAll.length;
+    top10Cities.value=rankingAll.slice(Math.max(0,totalCnt-10)).reverse();
+    bottom10Cities.value=rankingAll.slice(0,10);
+    displayTopCities.value=top10Cities.value;
+    nextTick(()=>{
+     updateMarkers(spat.city_ranking||[]);
+     addCityLabels(spat.city_ranking||[]);
+    });
+    const qd2=qual.level_distribution||{};
+    const td2=ov.total_days||1;
+    goodDayRatio.value=(((qd2['优']?.count||0)+(qd2['良']?.count||0))/td2*100).toFixed(1);
+    heavyPollutionDays.value=(qd2['重度污染']?.count||0)+(qd2['严重污染']?.count||0);
+    bestMonth.value=yrData.best_month?.month_name||'--';
+    worstMonth.value=yrData.worst_month?.month_name||'--';
+    const pd2=poll.primary_pollutant_distribution||[];
+    primaryPollutant.value=pd2.length?pd2.reduce((a,b)=>a.count>b.count?a:b).pollutant:'--';
+    pmRatio.value=poll.pm_ratio_stats?.avg?.toFixed(2)||'--';
+    episodeCount.value=adv.pollution_episodes?.length||0;
+    pm25City.value=rankingAll.sort((a,b)=>(b.avg_pm25||0)-(a.avg_pm25||0))[0]?.city||'--';
+    // initAllCharts already calls updateAllGlobalCharts once — skip redundant calls
+    initAllCharts();
+    // Single retry after DOM settles, with delay for zoom chart
+    setTimeout(()=>{ refreshZoomChart(); },250);
+   }catch(e){console.error('[Dashboard] Load error:',e);}
+   finally{clearTimeout(safetyTimer);loading.value=false;}
+  }
+
+  // ===== WATCHERS =====
+  watch(selectedYear,()=>{reloadData();});
+  watch(zoomVisible,(val)=>{
+   if(val){
+    renderZoomChart();
+   }else{
+    try{var dom=document.getElementById('zoom-'+zoomChartId.value);if(dom)echarts.dispose(dom);}catch(e){}
+    if(zoomInstance.value){
+     zoomInstance.value.dispose();
+     zoomInstance.value=null;
+    }
+   }
+  });
+  // Also re-render when switching charts in zoom mode
+  watch(zoomChartId,(newId,oldId)=>{
+   if(zoomVisible.value){
+    // Clean old DOM
+    if(oldId){try{var od=document.getElementById('zoom-'+oldId);if(od)echarts.dispose(od);}catch(e){}}
+    // Dispose current zoom instance before re-render
+    if(zoomInstance.value){zoomInstance.value.dispose();zoomInstance.value=null;}
+    setTimeout(()=>{renderZoomChart();},150);
+   }
+  });
+  watch(selectedCity,()=>{
+   Object.keys(chartYearOverrides).forEach(k=>{chartYearOverrides[k]=undefined;});
+   updateAvailableYears();
+   reloadData();
+  });
+
+  function updateAvailableYears(){
+   if(!selectedCity.value){years.value=[...allYears.value];return;}
+   const cy=cityDataMap[selectedCity.value];
+   years.value=cy?allYears.value.filter(y=>cy.includes(y)):[...allYears.value];
+  }
+
+  // Fast data reload for year/city switching — skips initAllCharts (reuses chart instances)
+  async function reloadData(){
+   console.log('[Dashboard] reloadData start...');
+   try{
+    const yr=selectedYear.value, city=selectedCity.value||'';
+    const [yrData,poll,qual,spat,adv,ov]=await Promise.all([
+     fetchJSON('/api/temporal?year='+yr+'&city='+city),
+     fetchJSON('/api/pollutants?year='+yr+'&city='+city),
+     fetchJSON('/api/quality?year='+yr+'&city='+city),
+     fetchJSON('/api/spatial?year='+yr),
+     fetchJSON('/api/advanced?year='+yr),
+     fetchJSON('/api/overview?year='+yr),
+    ]);
+    dataCache['temporal/'+yr+'/'+city]=yrData;
+    dataCache['spatial/'+yr]=spat;
+    dataCache['pollutants/'+yr+'/'+city]=poll;
+    dataCache['quality/'+yr+'/'+city]=qual;
+    dataCache['advanced/'+yr]=adv;
+    temporalData.value=yrData; spatialData.value=spat;
+    pollutantData.value=poll; qualityData.value=qual; advancedData.value=adv;
+    Object.assign(overview, ov);
+    const rankingAll=spat.city_ranking||[];
+    top10Cities.value=rankingAll.slice(Math.max(0,rankingAll.length-10)).reverse();
+    bottom10Cities.value=rankingAll.slice(0,10);
+    displayTopCities.value=top10Cities.value;
+    // Update globe markers (no need to recreate chart instances)
+    nextTick(()=>{ updateMarkers(spat.city_ranking||[]); addCityLabels(spat.city_ranking||[]); });
+    // Update KPIs
+    const qd=qual.level_distribution||{}, td=ov.total_days||1;
+    goodDayRatio.value=(((qd['优']?.count||0)+(qd['良']?.count||0))/td*100).toFixed(1);
+    heavyPollutionDays.value=(qd['重度污染']?.count||0)+(qd['严重污染']?.count||0);
+    bestMonth.value=yrData.best_month?.month_name||'--';
+    worstMonth.value=yrData.worst_month?.month_name||'--';
+    const pd=poll.primary_pollutant_distribution||[];
+    primaryPollutant.value=pd.length?pd.reduce((a,b)=>a.count>b.count?a:b).pollutant:'--';
+    episodeCount.value=adv.pollution_episodes?.length||0;
+    generatePolicy(yrData,qual,spat,poll,yr,adv);
+    // Re-render all charts on existing instances (fast)
+    updateAllGlobalCharts();
+    // Ensure heatmap zoom refreshes if open
+    nextTick(()=>refreshZoomChart());
+   }catch(e){console.error('[Dashboard] reloadData error:',e);}
+  }
+
+  // ===== UI HELPERS =====
+  function toggleFullscreen(){
+   isFullscreen.value=!isFullscreen.value;
+   const cp=document.querySelector('.center-panel');
+   if(cp)cp.classList.toggle('fs-mode',isFullscreen.value);
+   nextTick(()=>resizeHandler());
+  }
+  function expandMore(){
+   const mode=listMode.value;
+   const ranking=spatialData.value?.city_ranking||[];
+   if(mode==='best20'){
+    if(miniRankOverlay.value==='best') displayTopCities.value=[...ranking].reverse().slice(0,20);
+    else displayTopCities.value=ranking.slice(0,20);
+   }else if(mode==='best50'){
+    if(miniRankOverlay.value==='best') displayTopCities.value=[...ranking].reverse().slice(0,50);
+    else displayTopCities.value=ranking.slice(0,50);
+   }else if(mode==='bestAll'){
+    if(miniRankOverlay.value==='best') displayTopCities.value=[...ranking].reverse();
+    else displayTopCities.value=ranking;
+   }else{
+    if(miniRankOverlay.value==='best') displayTopCities.value=top10Cities.value;
+    else displayTopCities.value=bottom10Cities.value;
+   }
+  }
+  function toggleMiniRank(type){
+   if(miniRankOverlay.value===type){miniRankOverlay.value=null;return;}
+   miniRankOverlay.value=type;
+   if(type==='best')displayTopCities.value=top10Cities.value;
+   else displayTopCities.value=bottom10Cities.value;
+   nextTick(()=>{
+    const id=type==='best'?'ch10':'ch11';
+    const fn=chartFns[id];
+    if(fn)fn();
+   });
+  }
+
+  // ===== INIT =====
+  window.addEventListener('error',(e)=>{console.error('Global error:',e.message,e.filename,e.lineno);});
+  window.addEventListener('unhandledrejection',(e)=>{console.error('Unhandled rejection:',e.reason);});
+  console.log('[Setup] Calling loadAllData...');
+  loadAllData();
+  console.log('[Setup] loadAllData called (async)');
+  nextTick(()=>{
+   initChinaMap();
+   document.addEventListener('globe-select',(e)=>{
+    selectedCity.value=e.detail.city;
+   });
+   window.addEventListener('resize',resizeHandler);
+   document.addEventListener('fullscreenchange',()=>{
+    setTimeout(()=>{
+     Object.values(charts).forEach(c=>{try{c.resize();}catch(e){}});
+     if(zoomInstance.value)try{zoomInstance.value.resize();}catch(e){}
+    },300);
+   });
+  });
+
+  return {
+   loading,years,cities,selectedYear,selectedCity,
+   overview,top10Cities,bottom10Cities,displayTopCities,listMode,
+   temporalData,pollutantData,qualityData,advancedData,spatialData,
+   goodDayRatio,heavyPollutionDays,bestMonth,worstMonth,
+   primaryPollutant,pmRatio,episodeCount,pm25City,mostImprovedCity,
+   allYearAvgAQI,bestYearStat,worstYearStat,tenYearImprove,nationalGoodRate,
+   policyText,
+   zoomVisible,zoomChartId,zoomTitle,charts,zoomInstance,
+   kpiVisible,policyVisible,isFullscreen,miniChart,miniRankOverlay,
+   chartYearOverrides,dataCache,
+   chYear,onChartYear,zoomChart,closeZoom,selectCity,onCityChange,loadAllData,onZoomYear,togglePageFullscreen,
+   toggleFullscreen,expandMore,toggleMiniRank,generatePolicy,
+   kpiModalClose:()=>{kpiVisible=false;},
+   closePolicy:()=>{policyVisible=false;},
+  };
+ }
+});
+app.use(ElementPlus);
+app.mount('#app');
+</script>
+</body>
+</html>

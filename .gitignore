@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+.idea/
+venv/
+.env/
+*.egg-info/
+.DS_Store
+Thumbs.db
+processed_data/
+raw_data/
+yearly_data/
+cities_list.txt
+.claude/
