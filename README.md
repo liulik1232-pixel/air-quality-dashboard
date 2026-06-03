@@ -31,6 +31,26 @@ python app.py
 # http://localhost:5000
 ```
 
+## 截图
+
+### 大屏概览
+![大屏](screenshots/大屏.png)
+
+### 仪表盘展示
+![大屏显示](screenshots/大屏显示.png)
+
+### 中国地图
+![中国地图](screenshots/中国地图.png)
+
+### 污染物相关性热力图
+![热力图](screenshots/污染物相关热力图.png)
+
+### 十年AQI变化趋势
+![十年AQI](screenshots/十年AQI变化.png)
+
+### 质量等级转移矩阵
+![转移矩阵](screenshots/质量等级转移矩阵.png)
+
 ## API 端点
 
 | 端点 | 说明 |
