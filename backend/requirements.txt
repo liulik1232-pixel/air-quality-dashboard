@@ -4,3 +4,9 @@ pandas
 numpy
 scikit-learn
 scipy
+pymysql
+python-dotenv
+sqlalchemy
+requests
+playwright
+pycryptodome

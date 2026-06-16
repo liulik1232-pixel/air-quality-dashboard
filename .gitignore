@@ -4,6 +4,8 @@ __pycache__/
 .idea/
 venv/
 .env/
+.env
+backend/.env
 *.egg-info/
 .DS_Store
 Thumbs.db
@@ -12,3 +14,17 @@ raw_data/
 yearly_data/
 cities_list.txt
 .claude/
+
+# Backup & temp data files
+all_cities_all_years_old.csv
+cleaned_with_derived.csv
+aqistudy_*.csv
+failed_cities_detail.txt
+nan_rows.txt
+
+# Submission zips (too large, regeneratable)
+submission/*.zip
+submission/原始数据集.csv
+submission/清洗后数据集.csv
+submission/*_cn.txt
+submission/爬取原始数据/
